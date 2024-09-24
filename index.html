@@ -545,30 +545,45 @@
 			document.getElementById('save-pdf-file').addEventListener('click', saveToPDFFile);
 			
             function saveToXMLFile() {
-                const semesters = document.querySelectorAll('.semester');
-                const xmlDoc = document.implementation.createDocument(null, 'planner');
+				const semesters = document.querySelectorAll('.semester');
+				const xmlDoc = document.implementation.createDocument(null, 'planner');
 				
-                semesters.forEach(semester => {
-                    const semesterNode = xmlDoc.createElement('semester');
-                    semesterNode.setAttribute('id', semester.id);
+				semesters.forEach(semester => {
+					const semesterNode = xmlDoc.createElement('semester');
+					semesterNode.setAttribute('id', semester.id);
 					
-                    const courses = semester.querySelectorAll('.course');
-                    courses.forEach(course => {
-                        const courseNode = xmlDoc.createElement('course');
-                        courseNode.setAttribute('id', course.id);
-                        courseNode.setAttribute('title', course.textContent.trim());
-                        semesterNode.appendChild(courseNode);
+					const courses = semester.querySelectorAll('.course');
+					courses.forEach(course => {
+						const courseNode = xmlDoc.createElement('course');
+						courseNode.setAttribute('id', course.id);
+						semesterNode.appendChild(courseNode);
 					});
 					
-                    xmlDoc.documentElement.appendChild(semesterNode);
+					xmlDoc.documentElement.appendChild(semesterNode);
 				});
 				
-                const xmlString = new XMLSerializer().serializeToString(xmlDoc);
-                const blob = new Blob([xmlString], { type: 'application/xml' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = 'course-plan.xml';
-                link.click();
+				// Create the XSLT document with the correct namespace
+				const xsltString = 
+				'<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">' +
+				'<xsl:output method="xml" indent="yes"/>' +
+				'<xsl:template match="/">' +
+                '<xsl:copy-of select="."/>' +
+				'</xsl:template>' +
+				'</xsl:stylesheet>';
+				const parser = new DOMParser();
+				const xsltDoc = parser.parseFromString(xsltString, "application/xml");
+				
+				const xsltProcessor = new XSLTProcessor();
+				xsltProcessor.importStylesheet(xsltDoc);
+				
+				const resultDoc = xsltProcessor.transformToDocument(xmlDoc);
+				const xmlString = new XMLSerializer().serializeToString(resultDoc);
+				
+				const blob = new Blob([xmlString], { type: 'application/xml' });
+				const link = document.createElement('a');
+				link.href = URL.createObjectURL(blob);
+				link.download = 'course-plan.xml';
+				link.click();
 			}
 			
 			function loadFromXMLFile(event) {
@@ -581,42 +596,42 @@
 						restoreFromXML(xmlDoc);
 					};
 					reader.readAsText(file);
-				}
-			}
-			
-			function restoreFromXML(xmlDoc) {
-				const semesters = xmlDoc.getElementsByTagName('semester');
-				Array.from(semesters).forEach(semesterNode => {
+					}
+					}
+					
+					function restoreFromXML(xmlDoc) {
+					const semesters = xmlDoc.getElementsByTagName('semester');
+					Array.from(semesters).forEach(semesterNode => {
 					const semesterId = semesterNode.getAttribute('id');
 					const semesterElement = document.getElementById(semesterId);
 					const courseList = semesterElement.querySelector('.course-list');
 					
 					const courses = semesterNode.getElementsByTagName('course');
 					Array.from(courses).forEach(courseNode => {
-						const courseId = courseNode.getAttribute('id');
-						const courseElement = document.getElementById(courseId);
-						courseList.appendChild(courseElement); // Reattach course to the new semester
+					const courseId = courseNode.getAttribute('id');
+					const courseElement = document.getElementById(courseId);
+					courseList.appendChild(courseElement); // Reattach course to the new semester
 					});
-				});
-				
-				// After loading, validate courses and update credits
-				validateAllCourses();
-				updateCredits();
-			}
-			
-			function saveToPDFFile() {
-				// Import jsPDF and html2canvas
-				const { jsPDF } = window.jspdf;
-				
-				// Create a new jsPDF instance with landscape orientation and size 8.5" by 11"
-				const pdf = new jsPDF({
+					});
+					
+					// After loading, validate courses and update credits
+					validateAllCourses();
+					updateCredits();
+					}
+					
+					function saveToPDFFile() {
+					// Import jsPDF and html2canvas
+					const { jsPDF } = window.jspdf;
+					
+					// Create a new jsPDF instance with landscape orientation and size 8.5" by 11"
+					const pdf = new jsPDF({
 					orientation: 'landscape',
 					unit: 'in',
 					format: [8.5, 11]  // Page size: 8.5" x 11" landscape
-				});
-				
-				// Use html2canvas to capture the body content as an image
-				html2canvas(document.body, {
+					});
+					
+					// Use html2canvas to capture the body content as an image
+					html2canvas(document.body, {
 					scale: 2,  // Improve resolution by scaling
 					useCORS: true,  // Enable cross-origin resource sharing
 					windowWidth: document.body.scrollWidth,  // Capture full width of the page
@@ -645,23 +660,23 @@
 					
 					// Save the generated PDF
 					pdf.save('course-plan.pdf');
-				});
-			}
-			
-			
-			// Toggle instructions section
-			document.getElementById('instructions-toggle').addEventListener('click', function() {
-				const instructions = document.getElementById('instructions');
-				if (instructions.style.display === 'none' || instructions.style.display === '') {
+					});
+					}
+					
+					
+					// Toggle instructions section
+					document.getElementById('instructions-toggle').addEventListener('click', function() {
+					const instructions = document.getElementById('instructions');
+					if (instructions.style.display === 'none' || instructions.style.display === '') {
 					instructions.style.display = 'block';
 					this.textContent = 'Instructions & Notes [−]';  // Change to minus when expanded
 					} else {
 					instructions.style.display = 'none';
 					this.textContent = 'Instructions & Notes [+]';  // Change to plus when collapsed
-				}
-			});
-			
-		</script>
-		
-	</body>
+					}
+					});
+					
+	</script>
+	
+</body>
 </html>
