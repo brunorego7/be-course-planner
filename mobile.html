@@ -279,6 +279,7 @@
 let draggedCourse = null;
 let offsetX = 0;
 let offsetY = 0;
+let isDragging = false;
 
 // Handle dragging over semesters (both touch and mouse)
 semesters.forEach(semester => {
@@ -321,6 +322,7 @@ courses.forEach(course => {
 function handleTouchStart(e) {
   e.preventDefault();
   draggedCourse = this;
+  isDragging = true;
 
   const touch = e.targetTouches[0];
   const rect = draggedCourse.getBoundingClientRect();
@@ -331,11 +333,15 @@ function handleTouchStart(e) {
   draggedCourse.style.position = 'fixed';  // Use fixed to follow touch more reliably
   draggedCourse.style.zIndex = '1000';     // Ensure it's on top of other elements
   draggedCourse.style.width = `${rect.width}px`;  // Lock the width
+  draggedCourse.style.left = `${rect.left}px`;    // Set initial position to where the element was
+  draggedCourse.style.top = `${rect.top}px`;      // Set initial position to where the element was
   draggedCourse.style.transition = 'none';        // Disable transition for smooth dragging
 }
 
 function handleTouchMove(e) {
+  if (!isDragging) return;  // Only move the element if dragging is active
   e.preventDefault();
+  
   const touch = e.targetTouches[0];
 
   // Move the dragged course under the finger with smooth translation
@@ -344,18 +350,20 @@ function handleTouchMove(e) {
 
 function handleTouchEnd(e) {
   e.preventDefault();
+  isDragging = false;  // Reset dragging flag
+
   const touch = e.changedTouches[0];
   const dropTarget = document.elementFromPoint(touch.clientX, touch.clientY);
 
   if (dropTarget && dropTarget.classList.contains('semester')) {
     const courseList = dropTarget.querySelector('.course-list');
-    courseList.appendChild(draggedCourse);
+    courseList.appendChild(draggedCourse);  // Append to the new semester
     resetDraggedCourseStyle();  // Reset styles after drop
     sortCourses(courseList);
     validateAllCourses();
     updateCredits();
   } else {
-    // If drop target is not valid, reset the course's position
+    // If drop target is not valid, reset the course's position to its original location
     resetDraggedCourseStyle();
   }
 
@@ -396,7 +404,7 @@ courses.forEach(course => {
     }
   });
 });
-			
+
 			// Sort courses alphabetically by course title within each semester
 			function sortCourses(courseList) {
 				const coursesArray = Array.from(courseList.querySelectorAll('.course'));
