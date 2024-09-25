@@ -93,7 +93,7 @@
 	</head>
 	<body>
 		
-		<h1>Biological Engineering Course Planner 18:41</h1>
+		<h1>Biological Engineering Course Planner 18:48</h1>
 		
 		<!-- Load and Save buttons -->
 		<div style="text-align: left; margin-top: 20px; margin-bottom: 20px;">
@@ -421,6 +421,7 @@ courses.forEach(course => {
 
   const infoDiv = document.createElement('div');
   infoDiv.classList.add('info');
+  infoDiv.style.display = 'none'; // Ensure the info is hidden initially
   course.appendChild(infoDiv);
 
   toggleButton.addEventListener('click', (e) => {
