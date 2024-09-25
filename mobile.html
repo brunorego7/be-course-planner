@@ -313,9 +313,9 @@ courses.forEach(course => {
   });
 
   // Handle touch-based dragging (mobile)
-  course.addEventListener('touchstart', handleTouchStart);
-  course.addEventListener('touchmove', handleTouchMove);
-  course.addEventListener('touchend', handleTouchEnd);
+  course.addEventListener('touchstart', handleTouchStart, { passive: false });
+  course.addEventListener('touchmove', handleTouchMove, { passive: false });
+  course.addEventListener('touchend', handleTouchEnd, { passive: false });
 });
 
 function handleTouchStart(e) {
@@ -337,12 +337,13 @@ function handleTouchStart(e) {
 function handleTouchMove(e) {
   e.preventDefault();
   const touch = e.targetTouches[0];
-  
+
   // Move the dragged course under the finger with smooth translation
   draggedCourse.style.transform = `translate3d(${touch.pageX - offsetX}px, ${touch.pageY - offsetY}px, 0)`;
 }
 
 function handleTouchEnd(e) {
+  e.preventDefault();
   const touch = e.changedTouches[0];
   const dropTarget = document.elementFromPoint(touch.clientX, touch.clientY);
 
