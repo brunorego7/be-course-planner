@@ -93,7 +93,7 @@
 	</head>
 	<body>
 		
-		<h1>Biological Engineering Course Planner 18:34</h1>
+		<h1>Biological Engineering Course Planner 18:41</h1>
 		
 		<!-- Load and Save buttons -->
 		<div style="text-align: left; margin-top: 20px; margin-bottom: 20px;">
@@ -335,10 +335,11 @@ function handleTouchStart(e) {
   offsetX = touch.pageX - rect.left;
   offsetY = touch.pageY - rect.top;
 
-  // Set styles for dragging
+  // Set styles for dragging, lock width and height
   draggedCourse.style.position = 'fixed';  // Use fixed to follow touch more reliably
   draggedCourse.style.zIndex = '1000';     // Ensure it's on top of other elements
   draggedCourse.style.width = `${rect.width}px`;  // Lock the width
+  draggedCourse.style.height = `${rect.height}px`;  // Lock the height
   draggedCourse.style.left = `${rect.left}px`;    // Set initial position to where the element was
   draggedCourse.style.top = `${rect.top}px`;      // Set initial position to where the element was
   draggedCourse.style.transition = 'none';        // Disable transition for smooth dragging
@@ -360,7 +361,8 @@ function handleTouchMove(e) {
   e.preventDefault();
   
   // Move the dragged course under the finger with smooth translation
-  draggedCourse.style.transform = `translate3d(${touch.pageX - offsetX}px, ${touch.pageY - offsetY}px, 0)`;
+  draggedCourse.style.left = `${touch.pageX - offsetX}px`;
+  draggedCourse.style.top = `${touch.pageY - offsetY}px`;
 }
 
 function handleTouchEnd(e) {
@@ -406,6 +408,7 @@ function resetDraggedCourseStyle() {
   draggedCourse.style.top = '0';
   draggedCourse.style.zIndex = '';  // Reset z-index
   draggedCourse.style.width = '';   // Reset width
+  draggedCourse.style.height = '';  // Reset height
   draggedCourse.style.transition = ''; // Re-enable transitions if needed
 }
 
