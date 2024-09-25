@@ -280,11 +280,6 @@ let draggedCourse = null;
 let offsetX = 0;
 let offsetY = 0;
 
-// Helper function to detect mobile device
-function isTouchDevice() {
-  return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-}
-
 // Handle dragging over semesters (both touch and mouse)
 semesters.forEach(semester => {
   semester.addEventListener('dragover', e => {
@@ -296,13 +291,10 @@ semesters.forEach(semester => {
     if (draggedCourse) {
       const courseList = semester.querySelector('.course-list');
       courseList.appendChild(draggedCourse);
-      draggedCourse.style.position = 'relative';
-      draggedCourse.style.left = '0';
-      draggedCourse.style.top = '0';
-      draggedCourse.style.zIndex = '';
-      sortCourses(courseList);  // Sort courses alphabetically after drop
-      validateAllCourses();     // Validate prerequisites and corequisites
-      updateCredits();          // Update total credits
+      resetDraggedCourseStyle();  // Reset styles after drop
+      sortCourses(courseList);    // Sort courses alphabetically after drop
+      validateAllCourses();       // Validate prerequisites and corequisites
+      updateCredits();            // Update total credits
     }
   });
 });
@@ -317,7 +309,7 @@ courses.forEach(course => {
 
   course.addEventListener('dragend', () => {
     draggedCourse = null;
-    course.style.zIndex = '';  // Reset the z-index after dragging
+    resetDraggedCourseStyle();  // Reset styles after dragging
   });
 
   // Handle touch-based dragging (mobile)
@@ -336,18 +328,18 @@ function handleTouchStart(e) {
   offsetY = touch.pageY - rect.top;
 
   // Set styles for dragging
-  draggedCourse.style.position = 'absolute';
-  draggedCourse.style.zIndex = '1000';  // Ensure it's on top of other elements
-  draggedCourse.style.width = `${rect.width}px`;  // Maintain width while dragging
+  draggedCourse.style.position = 'fixed';  // Use fixed to follow touch more reliably
+  draggedCourse.style.zIndex = '1000';     // Ensure it's on top of other elements
+  draggedCourse.style.width = `${rect.width}px`;  // Lock the width
+  draggedCourse.style.transition = 'none';        // Disable transition for smooth dragging
 }
 
 function handleTouchMove(e) {
   e.preventDefault();
   const touch = e.targetTouches[0];
   
-  // Move the dragged course under the finger
-  draggedCourse.style.left = `${touch.pageX - offsetX}px`;
-  draggedCourse.style.top = `${touch.pageY - offsetY}px`;
+  // Move the dragged course under the finger with smooth translation
+  draggedCourse.style.transform = `translate3d(${touch.pageX - offsetX}px, ${touch.pageY - offsetY}px, 0)`;
 }
 
 function handleTouchEnd(e) {
@@ -357,22 +349,26 @@ function handleTouchEnd(e) {
   if (dropTarget && dropTarget.classList.contains('semester')) {
     const courseList = dropTarget.querySelector('.course-list');
     courseList.appendChild(draggedCourse);
-    draggedCourse.style.position = 'relative';
-    draggedCourse.style.left = '0';
-    draggedCourse.style.top = '0';
-    draggedCourse.style.zIndex = '';
+    resetDraggedCourseStyle();  // Reset styles after drop
     sortCourses(courseList);
     validateAllCourses();
     updateCredits();
   } else {
     // If drop target is not valid, reset the course's position
-    draggedCourse.style.position = 'relative';
-    draggedCourse.style.left = '0';
-    draggedCourse.style.top = '0';
-    draggedCourse.style.zIndex = '';
+    resetDraggedCourseStyle();
   }
 
   draggedCourse = null;
+}
+
+function resetDraggedCourseStyle() {
+  draggedCourse.style.position = 'relative';
+  draggedCourse.style.transform = 'none';  // Reset transform
+  draggedCourse.style.left = '0';
+  draggedCourse.style.top = '0';
+  draggedCourse.style.zIndex = '';  // Reset z-index
+  draggedCourse.style.width = '';   // Reset width
+  draggedCourse.style.transition = ''; // Re-enable transitions if needed
 }
 
 // Set up the "+" button to show details when clicked
@@ -399,8 +395,6 @@ courses.forEach(course => {
     }
   });
 });
-
-			
 			
 			// Sort courses alphabetically by course title within each semester
 			function sortCourses(courseList) {
