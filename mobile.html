@@ -93,7 +93,7 @@
 	</head>
 	<body>
 		
-		<h1>Biological Engineering Course Planner 18:52</h1>
+		<h1>Biological Engineering Course Planner 18:57</h1>
 		
 		<!-- Load and Save buttons -->
 		<div style="text-align: left; margin-top: 20px; margin-bottom: 20px;">
@@ -285,6 +285,8 @@ let touchStartX = 0;
 let touchStartY = 0;
 let initialWidth = 0;
 let initialHeight = 0;
+let tapStartTime = 0;
+const tapThreshold = 200; // Maximum time (ms) considered a tap, not a drag
 
 // Handle dragging over semesters (both touch and mouse)
 semesters.forEach(semester => {
@@ -326,8 +328,9 @@ courses.forEach(course => {
 
 function handleTouchStart(e) {
   e.preventDefault();
+  tapStartTime = Date.now();  // Record the time touch starts
   draggedCourse = this;
-  isDragging = false; // Start as not dragging yet
+  isDragging = false;  // Start as not dragging yet
 
   const touch = e.targetTouches[0];
   const rect = draggedCourse.getBoundingClientRect();
@@ -358,6 +361,7 @@ function handleTouchMove(e) {
   const moveX = Math.abs(touch.pageX - touchStartX);
   const moveY = Math.abs(touch.pageY - touchStartY);
   
+  // If the movement exceeds the threshold, consider it a drag
   if (moveX > dragThreshold || moveY > dragThreshold) {
     isDragging = true;  // Now we're officially dragging
   }
@@ -366,22 +370,23 @@ function handleTouchMove(e) {
 
   e.preventDefault();
   
-  // Move the dragged course under the finger with smooth translation
+  // Move the dragged course under the finger
   draggedCourse.style.left = `${touch.pageX - offsetX}px`;
   draggedCourse.style.top = `${touch.pageY - offsetY}px`;
 }
 
 function handleTouchEnd(e) {
-  const touch = e.changedTouches[0];
-
-  if (!isDragging) {
-    // If no dragging occurred, this is a tap, so we ignore drag logic
-    return;
+  const touchEndTime = Date.now();
+  
+  // Check if it's a tap based on the time and movement distance
+  if (!isDragging && (touchEndTime - tapStartTime < tapThreshold)) {
+    return; // Ignore drag logic, treat as tap (click event)
   }
 
   e.preventDefault();
   isDragging = false;  // Reset dragging flag
 
+  const touch = e.changedTouches[0];
   const dropTarget = document.elementFromPoint(touch.clientX, touch.clientY);
 
   if (dropTarget && dropTarget.classList.contains('semester')) {
