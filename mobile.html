@@ -276,98 +276,130 @@
 		
 		<script>
 			const semesters = document.querySelectorAll('.semester');
-			let draggedCourse = null;
-			
-			// Helper function to detect mobile device
-			function isTouchDevice() {
-				return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-			}
-			
-			// Handle dragging over semesters (both touch and mouse)
-			semesters.forEach(semester => {
-				semester.addEventListener('dragover', e => {
-					e.preventDefault();
-				});
-				
-				semester.addEventListener('drop', e => {
-					e.preventDefault();
-					if (draggedCourse) {
-						const courseList = semester.querySelector('.course-list');
-						courseList.appendChild(draggedCourse);
-						sortCourses(courseList);  // Sort courses alphabetically after drop
-						validateAllCourses();     // Validate prerequisites and corequisites
-						updateCredits();          // Update total credits
-					}
-				});
-			});
-			
-			// Handle dragging courses for mouse (desktop)
-			const courses = document.querySelectorAll('.course');
-			courses.forEach(course => {
-				course.addEventListener('dragstart', () => {
-					draggedCourse = course;
-				});
-				
-				course.addEventListener('dragend', () => {
-					draggedCourse = null;
-				});
-				
-				// Handle touch-based dragging (mobile)
-				course.addEventListener('touchstart', handleTouchStart);
-				course.addEventListener('touchmove', handleTouchMove);
-				course.addEventListener('touchend', handleTouchEnd);
-				
-				// Set up the "+" button to show details when clicked
-				const toggleButton = document.createElement('button');
-				toggleButton.textContent = '+';
-				toggleButton.classList.add('toggle-info');
-				course.appendChild(toggleButton);
-				
-				const infoDiv = document.createElement('div');
-				infoDiv.classList.add('info');
-				course.appendChild(infoDiv);
-				
-				toggleButton.addEventListener('click', () => {
-					if (infoDiv.style.display === 'none' || infoDiv.style.display === '') {
-						infoDiv.style.display = 'block';
-						toggleButton.textContent = '–';  // Change to en dash when info is shown
-						
-						// Show details: Credits, Prerequisites, Corequisites, Semesters Offered
-						validateCourse(course);  // <-- Ensure validation is applied when info is toggled
-						} else {
-						infoDiv.style.display = 'none';
-						toggleButton.textContent = '+';
-					}
-				});
-			});
-			
-			function handleTouchStart(e) {
-				e.preventDefault();
-				draggedCourse = this;
-			}
-			
-			function handleTouchMove(e) {
-				e.preventDefault();
-				const touchLocation = e.targetTouches[0];
-				draggedCourse.style.position = 'absolute';
-				draggedCourse.style.left = `${touchLocation.pageX}px`;
-				draggedCourse.style.top = `${touchLocation.pageY}px`;
-			}
-			
-			function handleTouchEnd(e) {
-				const dropTarget = document.elementFromPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
-				if (dropTarget && dropTarget.classList.contains('semester')) {
-					const courseList = dropTarget.querySelector('.course-list');
-					courseList.appendChild(draggedCourse);
-					sortCourses(courseList);
-					validateAllCourses();
-					updateCredits();
-				}
-				draggedCourse.style.position = 'relative';
-				draggedCourse.style.left = '0px';
-				draggedCourse.style.top = '0px';
-				draggedCourse = null;
-			}
+let draggedCourse = null;
+let offsetX = 0;
+let offsetY = 0;
+
+// Helper function to detect mobile device
+function isTouchDevice() {
+  return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+}
+
+// Handle dragging over semesters (both touch and mouse)
+semesters.forEach(semester => {
+  semester.addEventListener('dragover', e => {
+    e.preventDefault();
+  });
+
+  semester.addEventListener('drop', e => {
+    e.preventDefault();
+    if (draggedCourse) {
+      const courseList = semester.querySelector('.course-list');
+      courseList.appendChild(draggedCourse);
+      draggedCourse.style.position = 'relative';
+      draggedCourse.style.left = '0';
+      draggedCourse.style.top = '0';
+      draggedCourse.style.zIndex = '';
+      sortCourses(courseList);  // Sort courses alphabetically after drop
+      validateAllCourses();     // Validate prerequisites and corequisites
+      updateCredits();          // Update total credits
+    }
+  });
+});
+
+// Handle dragging courses for mouse (desktop)
+const courses = document.querySelectorAll('.course');
+courses.forEach(course => {
+  course.addEventListener('dragstart', e => {
+    draggedCourse = course;
+    course.style.zIndex = '1000';  // Bring the dragged course to the top
+  });
+
+  course.addEventListener('dragend', () => {
+    draggedCourse = null;
+    course.style.zIndex = '';  // Reset the z-index after dragging
+  });
+
+  // Handle touch-based dragging (mobile)
+  course.addEventListener('touchstart', handleTouchStart);
+  course.addEventListener('touchmove', handleTouchMove);
+  course.addEventListener('touchend', handleTouchEnd);
+});
+
+function handleTouchStart(e) {
+  e.preventDefault();
+  draggedCourse = this;
+
+  const touch = e.targetTouches[0];
+  const rect = draggedCourse.getBoundingClientRect();
+  offsetX = touch.pageX - rect.left;
+  offsetY = touch.pageY - rect.top;
+
+  // Set styles for dragging
+  draggedCourse.style.position = 'absolute';
+  draggedCourse.style.zIndex = '1000';  // Ensure it's on top of other elements
+  draggedCourse.style.width = `${rect.width}px`;  // Maintain width while dragging
+}
+
+function handleTouchMove(e) {
+  e.preventDefault();
+  const touch = e.targetTouches[0];
+  
+  // Move the dragged course under the finger
+  draggedCourse.style.left = `${touch.pageX - offsetX}px`;
+  draggedCourse.style.top = `${touch.pageY - offsetY}px`;
+}
+
+function handleTouchEnd(e) {
+  const touch = e.changedTouches[0];
+  const dropTarget = document.elementFromPoint(touch.clientX, touch.clientY);
+
+  if (dropTarget && dropTarget.classList.contains('semester')) {
+    const courseList = dropTarget.querySelector('.course-list');
+    courseList.appendChild(draggedCourse);
+    draggedCourse.style.position = 'relative';
+    draggedCourse.style.left = '0';
+    draggedCourse.style.top = '0';
+    draggedCourse.style.zIndex = '';
+    sortCourses(courseList);
+    validateAllCourses();
+    updateCredits();
+  } else {
+    // If drop target is not valid, reset the course's position
+    draggedCourse.style.position = 'relative';
+    draggedCourse.style.left = '0';
+    draggedCourse.style.top = '0';
+    draggedCourse.style.zIndex = '';
+  }
+
+  draggedCourse = null;
+}
+
+// Set up the "+" button to show details when clicked
+courses.forEach(course => {
+  const toggleButton = document.createElement('button');
+  toggleButton.textContent = '+';
+  toggleButton.classList.add('toggle-info');
+  course.appendChild(toggleButton);
+
+  const infoDiv = document.createElement('div');
+  infoDiv.classList.add('info');
+  course.appendChild(infoDiv);
+
+  toggleButton.addEventListener('click', () => {
+    if (infoDiv.style.display === 'none' || infoDiv.style.display === '') {
+      infoDiv.style.display = 'block';
+      toggleButton.textContent = '–';  // Change to en dash when info is shown
+
+      // Show details: Credits, Prerequisites, Corequisites, Semesters Offered
+      validateCourse(course);  // <-- Ensure validation is applied when info is toggled
+    } else {
+      infoDiv.style.display = 'none';
+      toggleButton.textContent = '+';
+    }
+  });
+});
+
 			
 			
 			// Sort courses alphabetically by course title within each semester
