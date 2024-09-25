@@ -93,7 +93,7 @@
 	</head>
 	<body>
 		
-		<h1>Biological Engineering Course Planner 18:48</h1>
+		<h1>Biological Engineering Course Planner 18:52</h1>
 		
 		<!-- Load and Save buttons -->
 		<div style="text-align: left; margin-top: 20px; margin-bottom: 20px;">
@@ -283,6 +283,8 @@ let isDragging = false;
 let dragThreshold = 10; // Minimum movement before we consider it a drag
 let touchStartX = 0;
 let touchStartY = 0;
+let initialWidth = 0;
+let initialHeight = 0;
 
 // Handle dragging over semesters (both touch and mouse)
 semesters.forEach(semester => {
@@ -335,11 +337,15 @@ function handleTouchStart(e) {
   offsetX = touch.pageX - rect.left;
   offsetY = touch.pageY - rect.top;
 
+  // Capture and lock the initial width and height to prevent resizing during drag
+  initialWidth = rect.width;
+  initialHeight = rect.height;
+
   // Set styles for dragging, lock width and height
   draggedCourse.style.position = 'fixed';  // Use fixed to follow touch more reliably
   draggedCourse.style.zIndex = '1000';     // Ensure it's on top of other elements
-  draggedCourse.style.width = `${rect.width}px`;  // Lock the width
-  draggedCourse.style.height = `${rect.height}px`;  // Lock the height
+  draggedCourse.style.width = `${initialWidth}px`;  // Lock the width
+  draggedCourse.style.height = `${initialHeight}px`;  // Lock the height
   draggedCourse.style.left = `${rect.left}px`;    // Set initial position to where the element was
   draggedCourse.style.top = `${rect.top}px`;      // Set initial position to where the element was
   draggedCourse.style.transition = 'none';        // Disable transition for smooth dragging
