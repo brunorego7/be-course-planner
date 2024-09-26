@@ -93,7 +93,7 @@
 	</head>
 	<body>
 		
-		<h1>Biological Engineering Course Planner 22:40</h1>
+		<h1>Biological Engineering Course Planner 22:47</h1>
 		
 		<!-- Load and Save buttons -->
 		<div style="text-align: left; margin-top: 20px; margin-bottom: 20px;">
@@ -334,15 +334,16 @@ courses.forEach(course => {
         const target = document.elementFromPoint(touch.clientX, touch.clientY);
         if (target && target.classList.contains('semester')) {
             target.appendChild(draggedCourse);
+            const courseList = target.querySelector('.course-list');
+            sortCourses(courseList);  // Sort courses alphabetically after drop
+            validateAllCourses();     // Validate prerequisites and corequisites
+            updateCredits();          // Update total credits
         }
     });
 
     course.addEventListener('touchend', e => {
         e.preventDefault();
         draggedCourse = null;
-        sortCourses(courseList);  // Sort courses alphabetically after drop
-        validateAllCourses();     // Validate prerequisites and corequisites
-        updateCredits();          // Update total credits
     });
 
     // Set up the "+" button to show details when clicked
@@ -368,7 +369,6 @@ courses.forEach(course => {
         }
     });
 });
-
 
 			// Sort courses alphabetically by course title within each semester
 			function sortCourses(courseList) {
