@@ -93,7 +93,7 @@
 	</head>
 	<body>
 		
-		<h1>Biological Engineering Course Planner 22:18</h1>
+		<h1>Biological Engineering Course Planner 22:32</h1>
 		
 		<!-- Load and Save buttons -->
 		<div style="text-align: left; margin-top: 20px; margin-bottom: 20px;">
@@ -323,11 +323,22 @@ courses.forEach(course => {
     });
 
     // Touch event listeners for mobile
-    course.addEventListener('touchstart', () => {
+    course.addEventListener('touchstart', e => {
         draggedCourse = course;
+        e.preventDefault();
     });
 
-    course.addEventListener('touchend', () => {
+    course.addEventListener('touchmove', e => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+        if (target && target.classList.contains('semester')) {
+            target.appendChild(draggedCourse);
+        }
+    });
+
+    course.addEventListener('touchend', e => {
+        e.preventDefault();
         draggedCourse = null;
     });
 
@@ -354,6 +365,7 @@ courses.forEach(course => {
         }
     });
 });
+
 
 			// Sort courses alphabetically by course title within each semester
 			function sortCourses(courseList) {
