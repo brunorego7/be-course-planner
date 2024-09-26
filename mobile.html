@@ -93,7 +93,7 @@
 	</head>
 	<body>
 		
-		<h1>Biological Engineering Course Planner 22:47</h1>
+		<h1>Biological Engineering Course Planner 22:54</h1>
 		
 		<!-- Load and Save buttons -->
 		<div style="text-align: left; margin-top: 20px; margin-bottom: 20px;">
@@ -288,6 +288,8 @@ semesters.forEach(semester => {
         if (draggedCourse) {
             const courseList = semester.querySelector('.course-list');
             courseList.appendChild(draggedCourse);
+            console.log('Dropped course:', draggedCourse);
+            console.log('Course list:', courseList);
             sortCourses(courseList);  // Sort courses alphabetically after drop
             validateAllCourses();     // Validate prerequisites and corequisites
             updateCredits();          // Update total credits
@@ -304,6 +306,8 @@ semesters.forEach(semester => {
         if (draggedCourse) {
             const courseList = semester.querySelector('.course-list');
             courseList.appendChild(draggedCourse);
+            console.log('Dropped course (touch):', draggedCourse);
+            console.log('Course list (touch):', courseList);
             sortCourses(courseList);  // Sort courses alphabetically after drop
             validateAllCourses();     // Validate prerequisites and corequisites
             updateCredits();          // Update total credits
@@ -335,6 +339,8 @@ courses.forEach(course => {
         if (target && target.classList.contains('semester')) {
             target.appendChild(draggedCourse);
             const courseList = target.querySelector('.course-list');
+            console.log('Dropped course (touchmove):', draggedCourse);
+            console.log('Course list (touchmove):', courseList);
             sortCourses(courseList);  // Sort courses alphabetically after drop
             validateAllCourses();     // Validate prerequisites and corequisites
             updateCredits();          // Update total credits
