@@ -93,7 +93,7 @@
 	</head>
 	<body>
 		
-		<h1>Biological Engineering Course Planner 19:08</h1>
+		<h1>Biological Engineering Course Planner 22:09</h1>
 		
 		<!-- Load and Save buttons -->
 		<div style="text-align: left; margin-top: 20px; margin-bottom: 20px;">
@@ -275,89 +275,63 @@
 		</div>
 		
 		<script>
-			// Simulate mouse events from touch events for mobile
-function simulateMouseEvent(event, type) {
-  const touch = event.changedTouches[0];
-  const simulatedEvent = new MouseEvent(type, {
-    bubbles: true,
-    cancelable: true,
-    view: window,
-    screenX: touch.screenX,
-    screenY: touch.screenY,
-    clientX: touch.clientX,
-    clientY: touch.clientY,
-  });
-  touch.target.dispatchEvent(simulatedEvent);
-  event.preventDefault();
-}
-
-// Add event listeners to simulate mouse events
-document.addEventListener('touchstart', function (e) {
-  simulateMouseEvent(e, 'mousedown');
-}, { passive: false });
-
-document.addEventListener('touchmove', function (e) {
-  simulateMouseEvent(e, 'mousemove');
-}, { passive: false });
-
-document.addEventListener('touchend', function (e) {
-  simulateMouseEvent(e, 'mouseup');
-}, { passive: false });
-
-// The rest of your drag-and-drop logic remains the same
-const semesters = document.querySelectorAll('.semester');
+			const semesters = document.querySelectorAll('.semester');
 let draggedCourse = null;
 
-// Handle dragging over semesters
 semesters.forEach(semester => {
-  semester.addEventListener('dragover', e => {
-    e.preventDefault();
-  });
+    semester.addEventListener('dragover', e => {
+        e.preventDefault();
+    });
 
-  semester.addEventListener('drop', e => {
-    e.preventDefault();
-    if (draggedCourse) {
-      const courseList = semester.querySelector('.course-list');
-      courseList.appendChild(draggedCourse);
-      resetDraggedCourseStyle();
-      sortCourses(courseList);  
-      validateAllCourses();
-      updateCredits();
-    }
-  });
+    semester.addEventListener('drop', e => {
+        e.preventDefault();
+        if (draggedCourse) {
+            const courseList = semester.querySelector('.course-list');
+            courseList.appendChild(draggedCourse);
+            sortCourses(courseList);  // Sort courses alphabetically after drop
+            validateAllCourses();     // Validate prerequisites and corequisites
+            updateCredits();          // Update total credits
+        }
+    });
+
+    // Touch event listeners for mobile
+    semester.addEventListener('touchmove', e => {
+        e.preventDefault();
+    });
+
+    semester.addEventListener('touchend', e => {
+        e.preventDefault();
+        if (draggedCourse) {
+            const courseList = semester.querySelector('.course-list');
+            courseList.appendChild(draggedCourse);
+            sortCourses(courseList);  // Sort courses alphabetically after drop
+            validateAllCourses();     // Validate prerequisites and corequisites
+            updateCredits();          // Update total credits
+        }
+    });
 });
 
 const courses = document.querySelectorAll('.course');
-courses.forEach(course => {
-  course.addEventListener('dragstart', () => {
-    draggedCourse = course;
-    course.style.zIndex = '1000'; 
-  });
 
-  course.addEventListener('dragend', () => {
-    draggedCourse = null;
-    resetDraggedCourseStyle();
-  });
+courses.forEach(course => {
+    course.addEventListener('dragstart', () => {
+        draggedCourse = course;
+    });
+
+    course.addEventListener('dragend', () => {
+        draggedCourse = null;
+    });
+
+    // Touch event listeners for mobile
+    course.addEventListener('touchstart', () => {
+        draggedCourse = course;
+    });
+
+    course.addEventListener('touchend', () => {
+        draggedCourse = null;
+    });
 });
 
-function resetDraggedCourseStyle() {
-  draggedCourse.style.position = 'relative';
-  draggedCourse.style.transform = 'none';
-  draggedCourse.style.left = '0';
-  draggedCourse.style.top = '0';
-  draggedCourse.style.zIndex = '';
-}
-
-courses.forEach(course => {
-  const toggleButton = document.createElement('button');
-  toggleButton.textContent = '+';
-  toggleButton.classList.add('toggle-info');
-  course.appendChild(toggleButton);
-
-  const infoDiv = document.createElement('div');
-  infoDiv.classList.add('info');
-  infoDiv.style.display = 'none'; 
-  course.appendChild(infoDiv);
 
   toggleButton.addEventListener('click', (e) => {
     e.stopPropagation(); 
