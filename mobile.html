@@ -93,7 +93,7 @@
 	</head>
 	<body>
 		
-		<h1>Biological Engineering Course Planner 23:33</h1>
+		<h1>Biological Engineering Course Planner 23:40</h1>
 		
 		<!-- Load and Save buttons -->
 		<div style="text-align: left; margin-top: 20px; margin-bottom: 20px;">
@@ -335,12 +335,13 @@ courses.forEach(course => {
         const touch = e.touches[0];
         initialX = touch.pageX;
         initialY = touch.pageY;
-        offsetX = touch.pageX - course.getBoundingClientRect().left;
-        offsetY = touch.pageY - course.getBoundingClientRect().top;
+        const rect = course.getBoundingClientRect();
+        offsetX = touch.clientX - rect.left;
+        offsetY = touch.clientY - rect.top;
         draggedCourse.style.position = 'absolute';
         draggedCourse.style.zIndex = '1000';  // Ensure the course is on top
-        draggedCourse.style.width = `${draggedCourse.offsetWidth}px`;  // Maintain size
-        draggedCourse.style.height = `${draggedCourse.offsetHeight}px`;  // Maintain size
+        draggedCourse.style.width = `${rect.width}px`;  // Maintain size
+        draggedCourse.style.height = `${rect.height}px`;  // Maintain size
     });
 
     course.addEventListener('touchmove', e => {
