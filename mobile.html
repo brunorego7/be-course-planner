@@ -93,7 +93,7 @@
 	</head>
 	<body>
 		
-		<h1>Biological Engineering Course Planner 23:26</h1>
+		<h1>Biological Engineering Course Planner 23:33</h1>
 		
 		<!-- Load and Save buttons -->
 		<div style="text-align: left; margin-top: 20px; margin-bottom: 20px;">
@@ -277,6 +277,10 @@
 		<script>
 			const semesters = document.querySelectorAll('.semester');
 let draggedCourse = null;
+let initialX = 0;
+let initialY = 0;
+let offsetX = 0;
+let offsetY = 0;
 
 semesters.forEach(semester => {
     semester.addEventListener('dragover', e => {
@@ -328,6 +332,11 @@ courses.forEach(course => {
     course.addEventListener('touchstart', e => {
         draggedCourse = course;
         e.preventDefault();
+        const touch = e.touches[0];
+        initialX = touch.pageX;
+        initialY = touch.pageY;
+        offsetX = touch.pageX - course.getBoundingClientRect().left;
+        offsetY = touch.pageY - course.getBoundingClientRect().top;
         draggedCourse.style.position = 'absolute';
         draggedCourse.style.zIndex = '1000';  // Ensure the course is on top
         draggedCourse.style.width = `${draggedCourse.offsetWidth}px`;  // Maintain size
@@ -337,8 +346,8 @@ courses.forEach(course => {
     course.addEventListener('touchmove', e => {
         e.preventDefault();
         const touch = e.touches[0];
-        draggedCourse.style.left = `${touch.pageX - draggedCourse.offsetWidth / 2}px`;
-        draggedCourse.style.top = `${touch.pageY - draggedCourse.offsetHeight / 2}px`;
+        draggedCourse.style.left = `${touch.pageX - offsetX}px`;
+        draggedCourse.style.top = `${touch.pageY - offsetY}px`;
     });
 
     course.addEventListener('touchend', e => {
