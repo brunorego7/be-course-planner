@@ -93,7 +93,7 @@
 	</head>
 	<body>
 		
-		<h1>Biological Engineering Course Planner 22:09</h1>
+		<h1>Biological Engineering Course Planner 22:18</h1>
 		
 		<!-- Load and Save buttons -->
 		<div style="text-align: left; margin-top: 20px; margin-bottom: 20px;">
@@ -330,20 +330,29 @@ courses.forEach(course => {
     course.addEventListener('touchend', () => {
         draggedCourse = null;
     });
-});
 
+    // Set up the "+" button to show details when clicked
+    const toggleButton = document.createElement('button');
+    toggleButton.textContent = '+';
+    toggleButton.classList.add('toggle-info');
+    course.appendChild(toggleButton);
 
-  toggleButton.addEventListener('click', (e) => {
-    e.stopPropagation(); 
-    if (infoDiv.style.display === 'none' || infoDiv.style.display === '') {
-      infoDiv.style.display = 'block';
-      toggleButton.textContent = '–'; 
-      validateCourse(course); 
-    } else {
-      infoDiv.style.display = 'none';
-      toggleButton.textContent = '+';
-    }
-  });
+    const infoDiv = document.createElement('div');
+    infoDiv.classList.add('info');
+    course.appendChild(infoDiv);
+
+    toggleButton.addEventListener('click', () => {
+        if (infoDiv.style.display === 'none' || infoDiv.style.display === '') {
+            infoDiv.style.display = 'block';
+            toggleButton.textContent = '–';  // Change to en dash when info is shown
+
+            // Show details: Credits, Prerequisites, Corequisites, Semesters Offered
+            validateCourse(course);  // <-- Ensure validation is applied when info is toggled
+        } else {
+            infoDiv.style.display = 'none';
+            toggleButton.textContent = '+';
+        }
+    });
 });
 
 			// Sort courses alphabetically by course title within each semester
