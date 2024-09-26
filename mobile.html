@@ -93,7 +93,7 @@
 	</head>
 	<body>
 		
-		<h1>Biological Engineering Course Planner 23:14</h1>
+		<h1>Biological Engineering Course Planner 23:20</h1>
 		
 		<!-- Load and Save buttons -->
 		<div style="text-align: left; margin-top: 20px; margin-bottom: 20px;">
@@ -291,9 +291,7 @@ semesters.forEach(semester => {
             sortCourses(courseList);  // Sort courses alphabetically after drop
             validateAllCourses();     // Validate prerequisites and corequisites
             updateCredits();          // Update total credits
-            draggedCourse.style.position = '';  // Reset position
-            draggedCourse.style.left = '';
-            draggedCourse.style.top = '';
+            resetDraggedCourseStyle();
         }
     });
 
@@ -310,9 +308,7 @@ semesters.forEach(semester => {
             sortCourses(courseList);  // Sort courses alphabetically after drop
             validateAllCourses();     // Validate prerequisites and corequisites
             updateCredits();          // Update total credits
-            draggedCourse.style.position = '';  // Reset position
-            draggedCourse.style.left = '';
-            draggedCourse.style.top = '';
+            resetDraggedCourseStyle();
         }
     });
 });
@@ -333,6 +329,9 @@ courses.forEach(course => {
         draggedCourse = course;
         e.preventDefault();
         draggedCourse.style.position = 'absolute';
+        draggedCourse.style.zIndex = '1000';  // Ensure the course is on top
+        draggedCourse.style.width = `${draggedCourse.offsetWidth}px`;  // Maintain size
+        draggedCourse.style.height = `${draggedCourse.offsetHeight}px`;  // Maintain size
     });
 
     course.addEventListener('touchmove', e => {
@@ -344,6 +343,18 @@ courses.forEach(course => {
 
     course.addEventListener('touchend', e => {
         e.preventDefault();
+        const touch = e.changedTouches[0];
+        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+        if (target && target.classList.contains('semester')) {
+            const courseList = target.querySelector('.course-list');
+            if (courseList) {
+                courseList.appendChild(draggedCourse);
+                sortCourses(courseList);  // Sort courses alphabetically after drop
+                validateAllCourses();     // Validate prerequisites and corequisites
+                updateCredits();          // Update total credits
+            }
+        }
+        resetDraggedCourseStyle();
         draggedCourse = null;
     });
 
@@ -370,6 +381,17 @@ courses.forEach(course => {
         }
     });
 });
+
+function resetDraggedCourseStyle() {
+    if (draggedCourse) {
+        draggedCourse.style.position = '';
+        draggedCourse.style.zIndex = '';
+        draggedCourse.style.left = '';
+        draggedCourse.style.top = '';
+        draggedCourse.style.width = '';
+        draggedCourse.style.height = '';
+    }
+}
 
 			// Sort courses alphabetically by course title within each semester
 			function sortCourses(courseList) {
