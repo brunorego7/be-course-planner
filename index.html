@@ -82,6 +82,9 @@
 		text-align: center;
 		font-size: 16px;
 	}
+	button {
+		margin: 5px;
+	}
 	.vertical-space {
 		display: block;
 		height: 5px; /* For inserting precise amount of space between lines of text */
@@ -101,13 +104,14 @@
 		<button id="trigger-load-xml-file">Load from XML...</button>
 		<button id="save-xml-file">Save to XML</button>
 		<button id="save-pdf-file">Save to PDF</button>
+		<button id="generate-url">Copy shareable link</button>
 	</div>
 
 	<!-- Instructions & Notes (collapsed by default) -->
 	<h3 style="cursor: pointer; text-align: left;" id="instructions-toggle">Instructions & Notes [+]</h3>
 	<div id="instructions" style="display: none; background-color: #ffffff; margin: 10px 0px;">
 		<p>Drag and drop courses that you've completed to the "Completed Credits" column. Then, drag and drop all other courses to the semester in which you plan to take them.</p>
-		<p>If you'd like to reset all courses, simply refresh the page.</p>
+		<p>To reset all courses, simply refresh the page.</p>
 		<p>Courses highlighted in <span style="background-color:#fffaa0;">yellow</span> are considered to be of above-average difficulty, while courses highlighted in <span style="background-color:#ffd580;">orange</span> are considered the most difficult. A maximum of two (2) yellow courses or one (1) orange course is recommended in any semester, if possible.</p>
 		<p>If a <em>course</em> is highlighted in <span style="background-color:#ffcccb;">red</span>, click its "<strong>+</strong>" button to see which requirements (highlighted in <span style="background-color:yellow;">yellow</span>) are being violated.</p>
 		<p>If a <em>semester</em> is highlighted in <span style="background-color:#ffcccb;">red</span>, then more than 18 credit hours are currently planned for that semester (or more than 6 credit hours, if it's a summer semester).</p>
@@ -777,6 +781,72 @@
 		});
 	}
 
+	// Function to generate the URL with course arrangement and copy it to clipboard
+	function generateAndCopyURL() {
+		const semesters = document.querySelectorAll('.semester');
+		const data = {};
+
+		semesters.forEach(semester => {
+			const semesterId = semester.id;
+			const courseIds = Array.from(semester.querySelectorAll('.course')).map(course => course.id);
+			data[semesterId] = courseIds;
+		});
+
+		// Convert to a JSON string and base64 encode it
+		const serializedData = JSON.stringify(data);
+		const encodedData = btoa(serializedData);  // Base64 encode
+
+		// Create the URL with the encoded data as a query parameter
+		const currentUrl = window.location.href.split('?')[0];  // Strip off existing query params
+		const newUrl = `${currentUrl}?data=${encodedData}`;
+
+		// Copy the URL to the clipboard
+		navigator.clipboard.writeText(newUrl).then(() => {
+			alert("Shareable link copied to clipboard!");
+		}).catch(err => {
+			console.error('Failed to copy shareable link:', err);
+		});
+	}
+
+	// Add event listener to the "Generate URL & Copy" button
+	document.getElementById('generate-url').addEventListener('click', generateAndCopyURL);
+
+	function loadFromURL() {
+	    const urlParams = new URLSearchParams(window.location.search);
+	    const encodedData = urlParams.get('data');
+
+	    if (encodedData) {
+	        try {
+	            const decodedData = atob(encodedData);  // Base64 decode
+	            const data = JSON.parse(decodedData);
+
+	            // Reconstruct the course planner based on the data
+	            for (const semesterId in data) {
+	                const courseIds = data[semesterId];
+	                const courseList = document.getElementById(semesterId).querySelector('.course-list');
+
+	                courseIds.forEach(courseId => {
+	                    const courseElement = document.getElementById(courseId);
+	                    if (courseElement) {
+	                        courseList.appendChild(courseElement);  // Move course to the correct semester
+	                    }
+	                });
+	            }
+
+	            // After loading, validate courses and update credits
+	            validateAllCourses();
+	            updateCredits();
+	        } catch (error) {
+	            console.error('Failed to load data from URL:', error);
+	        }
+	    }
+	}
+
+	// Run this on page load
+	window.onload = function () {
+	    loadFromURL();  // Load from URL if present
+	    // Other initialization code
+	};
 
 	// Toggle instructions section
 	document.getElementById('instructions-toggle').addEventListener('click', function() {
