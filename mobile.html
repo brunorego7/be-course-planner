@@ -93,7 +93,7 @@
 	</head>
 	<body>
 		
-		<h1>Biological Engineering Course Planner 23:20</h1>
+		<h1>Biological Engineering Course Planner 23:26</h1>
 		
 		<!-- Load and Save buttons -->
 		<div style="text-align: left; margin-top: 20px; margin-bottom: 20px;">
@@ -337,21 +337,24 @@ courses.forEach(course => {
     course.addEventListener('touchmove', e => {
         e.preventDefault();
         const touch = e.touches[0];
-        draggedCourse.style.left = `${touch.clientX - draggedCourse.offsetWidth / 2}px`;
-        draggedCourse.style.top = `${touch.clientY - draggedCourse.offsetHeight / 2}px`;
+        draggedCourse.style.left = `${touch.pageX - draggedCourse.offsetWidth / 2}px`;
+        draggedCourse.style.top = `${touch.pageY - draggedCourse.offsetHeight / 2}px`;
     });
 
     course.addEventListener('touchend', e => {
         e.preventDefault();
         const touch = e.changedTouches[0];
         const target = document.elementFromPoint(touch.clientX, touch.clientY);
-        if (target && target.classList.contains('semester')) {
-            const courseList = target.querySelector('.course-list');
-            if (courseList) {
-                courseList.appendChild(draggedCourse);
-                sortCourses(courseList);  // Sort courses alphabetically after drop
-                validateAllCourses();     // Validate prerequisites and corequisites
-                updateCredits();          // Update total credits
+        if (target) {
+            const semester = target.closest('.semester');
+            if (semester) {
+                const courseList = semester.querySelector('.course-list');
+                if (courseList) {
+                    courseList.appendChild(draggedCourse);
+                    sortCourses(courseList);  // Sort courses alphabetically after drop
+                    validateAllCourses();     // Validate prerequisites and corequisites
+                    updateCredits();          // Update total credits
+                }
             }
         }
         resetDraggedCourseStyle();
