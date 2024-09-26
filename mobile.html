@@ -93,7 +93,7 @@
 	</head>
 	<body>
 		
-		<h1>Biological Engineering Course Planner 00:26</h1>
+		<h1>Biological Engineering Course Planner 00:33</h1>
 		
 		<!-- Load and Save buttons -->
 		<div style="text-align: left; margin-top: 20px; margin-bottom: 20px;">
@@ -320,60 +320,6 @@ semesters.forEach(semester => {
 const courses = document.querySelectorAll('.course');
 
 courses.forEach(course => {
-    course.addEventListener('dragstart', () => {
-        draggedCourse = course;
-    });
-
-    course.addEventListener('dragend', () => {
-        draggedCourse = null;
-    });
-
-    // Touch event listeners for mobile
-    course.addEventListener('touchstart', e => {
-        draggedCourse = course;
-        e.preventDefault();
-        const touch = e.touches[0];
-        const rect = course.getBoundingClientRect();
-        initialX = touch.clientX;
-        initialY = touch.clientY;
-        offsetX = touch.clientX - rect.left;
-        offsetY = touch.clientY - rect.top;
-        draggedCourse.style.position = 'absolute';
-        draggedCourse.style.zIndex = '1000';  // Ensure the course is on top
-        draggedCourse.style.width = `${rect.width}px`;  // Maintain size
-        draggedCourse.style.height = `${rect.height}px`;  // Maintain size
-        draggedCourse.style.transform = 'translate(0, 0)';  // Reset any previous transforms
-    });
-
-    course.addEventListener('touchmove', e => {
-        e.preventDefault();
-        const touch = e.touches[0];
-        const parentRect = draggedCourse.parentElement.getBoundingClientRect();
-        const moveX = touch.clientX - offsetX - parentRect.left;
-        const moveY = touch.clientY - offsetY - parentRect.top;
-        draggedCourse.style.transform = `translate(${moveX}px, ${moveY}px)`;
-    });
-
-    course.addEventListener('touchend', e => {
-        e.preventDefault();
-        const touch = e.changedTouches[0];
-        const target = document.elementFromPoint(touch.clientX, touch.clientY);
-        if (target) {
-            const semester = target.closest('.semester');
-            if (semester) {
-                const courseList = semester.querySelector('.course-list');
-                if (courseList) {
-                    courseList.appendChild(draggedCourse);
-                    sortCourses(courseList);  // Sort courses alphabetically after drop
-                    validateAllCourses();     // Validate prerequisites and corequisites
-                    updateCredits();          // Update total credits
-                }
-            }
-        }
-        resetDraggedCourseStyle();
-        draggedCourse = null;
-    });
-
     // Set up the "+" button to show details when clicked
     const toggleButton = document.createElement('button');
     toggleButton.textContent = '+';
@@ -395,6 +341,97 @@ courses.forEach(course => {
             infoDiv.style.display = 'none';
             toggleButton.textContent = '+';
         }
+    });
+
+    course.addEventListener('dragstart', () => {
+        draggedCourse = course;
+    });
+
+    course.addEventListener('dragend', () => {
+        draggedCourse = null;
+    });
+
+    // Touch event listeners for mobile
+    course.addEventListener('touchstart', e => {
+        draggedCourse = course;
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = course.getBoundingClientRect();
+        initialX = touch.clientX;
+        initialY = touch.clientY;
+        offsetX = touch.clientX - rect.left;
+        offsetY = touch.clientY - rect.top;
+        draggedCourse.style.position = 'relative';
+        draggedCourse.style.zIndex = '1000';  // Ensure the course is on top
+        draggedCourse.style.width = `${rect.width}px`;  // Maintain size
+        draggedCourse.style.height = `${rect.height}px`;  // Maintain size
+        draggedCourse.style.transform = 'translate(0, 0)';  // Reset any previous transforms
+    });
+
+    course.addEventListener('touchmove', e => {
+        draggedCourse = course;
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = course.getBoundingClientRect();
+        const parentRect = draggedCourse.parentElement.getBoundingClientRect();
+        const moveX = touch.clientX - initialX;//- offsetX - parentRect.left;
+        const moveY = touch.clientY - initialY;//- offsetY - parentRect.top;
+        //draggedCourse.style.width = `${rect.width}px`;  // Maintain size
+        //draggedCourse.style.height = `${rect.height}px`;  // Maintain size
+        draggedCourse.style.transform = `translate(${moveX}px, ${moveY}px)`;
+    });
+
+    course.addEventListener('touchend', e => {
+        e.preventDefault();
+        const touch = e.changedTouches[0];
+        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+        if (target) {
+            //const semester = target.closest('.semester');
+            const semesters = document.querySelectorAll('.semester');
+    let nearestSemester = null;
+    let minDistance = Infinity;
+
+    semesters.forEach(semester => {
+        const rect = semester.getBoundingClientRect();
+        const semesterX = rect.left + rect.width / 2;
+        const semesterY = rect.top + rect.height / 2;
+        
+        const distance = Math.sqrt(Math.pow(semesterX - touch.clientX, 2) + Math.pow(semesterY - touch.clientY, 2));
+        
+        if (distance < minDistance) {
+            minDistance = distance;
+            nearestSemester = semester;
+        }
+    });
+            if (nearestSemester) {
+                // If the semester of the course hasn't changed after touching/moving (which could actually be a tap/click),
+                // then assume that the user wants to toggle the course info
+                console.log(nearestSemester);
+                console.log(course.parentElement.parentElement);
+                if (nearestSemester == course.parentElement.parentElement) {
+        if (infoDiv.style.display === 'none' || infoDiv.style.display === '') {
+            infoDiv.style.display = 'block';
+            toggleButton.textContent = '–';  // Change to en dash when info is shown
+
+            // Show details: Credits, Prerequisites, Corequisites, Semesters Offered
+            validateCourse(course);  // <-- Ensure validation is applied when info is toggled
+        } else {
+            infoDiv.style.display = 'none';
+            toggleButton.textContent = '+';
+        }
+    };
+                const courseList = nearestSemester.querySelector('.course-list');
+                if (courseList) {
+                    courseList.appendChild(draggedCourse);
+                    sortCourses(courseList);  // Sort courses alphabetically after drop
+                    validateAllCourses();     // Validate prerequisites and corequisites
+                    updateCredits();          // Update total credits
+                }
+            }
+        }
+        
+        resetDraggedCourseStyle();
+        draggedCourse = null;
     });
 });
 
