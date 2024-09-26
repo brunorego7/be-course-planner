@@ -93,7 +93,7 @@
 	</head>
 	<body>
 		
-		<h1>Biological Engineering Course Planner 18:57</h1>
+		<h1>Biological Engineering Course Planner 19:08</h1>
 		
 		<!-- Load and Save buttons -->
 		<div style="text-align: left; margin-top: 20px; margin-bottom: 20px;">
@@ -275,20 +275,40 @@
 		</div>
 		
 		<script>
-			const semesters = document.querySelectorAll('.semester');
-let draggedCourse = null;
-let offsetX = 0;
-let offsetY = 0;
-let isDragging = false;
-let dragThreshold = 10; // Minimum movement before we consider it a drag
-let touchStartX = 0;
-let touchStartY = 0;
-let initialWidth = 0;
-let initialHeight = 0;
-let tapStartTime = 0;
-const tapThreshold = 200; // Maximum time (ms) considered a tap, not a drag
+			// Simulate mouse events from touch events for mobile
+function simulateMouseEvent(event, type) {
+  const touch = event.changedTouches[0];
+  const simulatedEvent = new MouseEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    view: window,
+    screenX: touch.screenX,
+    screenY: touch.screenY,
+    clientX: touch.clientX,
+    clientY: touch.clientY,
+  });
+  touch.target.dispatchEvent(simulatedEvent);
+  event.preventDefault();
+}
 
-// Handle dragging over semesters (both touch and mouse)
+// Add event listeners to simulate mouse events
+document.addEventListener('touchstart', function (e) {
+  simulateMouseEvent(e, 'mousedown');
+}, { passive: false });
+
+document.addEventListener('touchmove', function (e) {
+  simulateMouseEvent(e, 'mousemove');
+}, { passive: false });
+
+document.addEventListener('touchend', function (e) {
+  simulateMouseEvent(e, 'mouseup');
+}, { passive: false });
+
+// The rest of your drag-and-drop logic remains the same
+const semesters = document.querySelectorAll('.semester');
+let draggedCourse = null;
+
+// Handle dragging over semesters
 semesters.forEach(semester => {
   semester.addEventListener('dragover', e => {
     e.preventDefault();
@@ -299,131 +319,35 @@ semesters.forEach(semester => {
     if (draggedCourse) {
       const courseList = semester.querySelector('.course-list');
       courseList.appendChild(draggedCourse);
-      resetDraggedCourseStyle();  // Reset styles after drop
-      sortCourses(courseList);    // Sort courses alphabetically after drop
-      validateAllCourses();       // Validate prerequisites and corequisites
-      updateCredits();            // Update total credits
+      resetDraggedCourseStyle();
+      sortCourses(courseList);  
+      validateAllCourses();
+      updateCredits();
     }
   });
 });
 
-// Handle dragging courses for mouse (desktop)
 const courses = document.querySelectorAll('.course');
 courses.forEach(course => {
-  course.addEventListener('dragstart', e => {
+  course.addEventListener('dragstart', () => {
     draggedCourse = course;
-    course.style.zIndex = '1000';  // Bring the dragged course to the top
+    course.style.zIndex = '1000'; 
   });
 
   course.addEventListener('dragend', () => {
     draggedCourse = null;
-    resetDraggedCourseStyle();  // Reset styles after dragging
-  });
-
-  // Handle touch-based dragging (mobile)
-  course.addEventListener('touchstart', handleTouchStart, { passive: false });
-  course.addEventListener('touchmove', handleTouchMove, { passive: false });
-  course.addEventListener('touchend', handleTouchEnd, { passive: false });
-});
-
-function handleTouchStart(e) {
-  e.preventDefault();
-  tapStartTime = Date.now();  // Record the time touch starts
-  draggedCourse = this;
-  isDragging = false;  // Start as not dragging yet
-
-  const touch = e.targetTouches[0];
-  const rect = draggedCourse.getBoundingClientRect();
-  touchStartX = touch.pageX;
-  touchStartY = touch.pageY;
-
-  offsetX = touch.pageX - rect.left;
-  offsetY = touch.pageY - rect.top;
-
-  // Capture and lock the initial width and height to prevent resizing during drag
-  initialWidth = rect.width;
-  initialHeight = rect.height;
-
-  // Set styles for dragging, lock width and height
-  draggedCourse.style.position = 'fixed';  // Use fixed to follow touch more reliably
-  draggedCourse.style.zIndex = '1000';     // Ensure it's on top of other elements
-  draggedCourse.style.width = `${initialWidth}px`;  // Lock the width
-  draggedCourse.style.height = `${initialHeight}px`;  // Lock the height
-  draggedCourse.style.left = `${rect.left}px`;    // Set initial position to where the element was
-  draggedCourse.style.top = `${rect.top}px`;      // Set initial position to where the element was
-  draggedCourse.style.transition = 'none';        // Disable transition for smooth dragging
-}
-
-function handleTouchMove(e) {
-  const touch = e.targetTouches[0];
-
-  // Calculate the movement to determine if it's a drag
-  const moveX = Math.abs(touch.pageX - touchStartX);
-  const moveY = Math.abs(touch.pageY - touchStartY);
-  
-  // If the movement exceeds the threshold, consider it a drag
-  if (moveX > dragThreshold || moveY > dragThreshold) {
-    isDragging = true;  // Now we're officially dragging
-  }
-  
-  if (!isDragging) return; // Only move if dragging is true
-
-  e.preventDefault();
-  
-  // Move the dragged course under the finger
-  draggedCourse.style.left = `${touch.pageX - offsetX}px`;
-  draggedCourse.style.top = `${touch.pageY - offsetY}px`;
-}
-
-function handleTouchEnd(e) {
-  const touchEndTime = Date.now();
-  
-  // Check if it's a tap based on the time and movement distance
-  if (!isDragging && (touchEndTime - tapStartTime < tapThreshold)) {
-    return; // Ignore drag logic, treat as tap (click event)
-  }
-
-  e.preventDefault();
-  isDragging = false;  // Reset dragging flag
-
-  const touch = e.changedTouches[0];
-  const dropTarget = document.elementFromPoint(touch.clientX, touch.clientY);
-
-  if (dropTarget && dropTarget.classList.contains('semester')) {
-    const courseList = dropTarget.querySelector('.course-list');
-    courseList.appendChild(draggedCourse);  // Append to the new semester
-    resetDraggedCourseStyle();  // Reset styles after drop
-    sortCourses(courseList);
-    validateAllCourses();
-    updateCredits();
-  } else if (dropTarget && dropTarget.classList.contains('course')) {
-    // If dropped onto another course, move it to that course's semester
-    const courseList = dropTarget.closest('.semester').querySelector('.course-list');
-    courseList.appendChild(draggedCourse);
-    resetDraggedCourseStyle();  // Reset styles after drop
-    sortCourses(courseList);
-    validateAllCourses();
-    updateCredits();
-  } else {
-    // If drop target is not valid, reset the course's position to its original location
     resetDraggedCourseStyle();
-  }
-
-  draggedCourse = null;
-}
+  });
+});
 
 function resetDraggedCourseStyle() {
   draggedCourse.style.position = 'relative';
-  draggedCourse.style.transform = 'none';  // Reset transform
+  draggedCourse.style.transform = 'none';
   draggedCourse.style.left = '0';
   draggedCourse.style.top = '0';
-  draggedCourse.style.zIndex = '';  // Reset z-index
-  draggedCourse.style.width = '';   // Reset width
-  draggedCourse.style.height = '';  // Reset height
-  draggedCourse.style.transition = ''; // Re-enable transitions if needed
+  draggedCourse.style.zIndex = '';
 }
 
-// Set up the "+" button to show details when clicked
 courses.forEach(course => {
   const toggleButton = document.createElement('button');
   toggleButton.textContent = '+';
@@ -432,20 +356,15 @@ courses.forEach(course => {
 
   const infoDiv = document.createElement('div');
   infoDiv.classList.add('info');
-  infoDiv.style.display = 'none'; // Ensure the info is hidden initially
+  infoDiv.style.display = 'none'; 
   course.appendChild(infoDiv);
 
   toggleButton.addEventListener('click', (e) => {
-    if (isDragging) return; // Ignore clicks if we are dragging
-
-    e.stopPropagation();  // Prevent triggering drag event
-
+    e.stopPropagation(); 
     if (infoDiv.style.display === 'none' || infoDiv.style.display === '') {
       infoDiv.style.display = 'block';
-      toggleButton.textContent = '–';  // Change to en dash when info is shown
-
-      // Show details: Credits, Prerequisites, Corequisites, Semesters Offered
-      validateCourse(course);  // <-- Ensure validation is applied when info is toggled
+      toggleButton.textContent = '–'; 
+      validateCourse(course); 
     } else {
       infoDiv.style.display = 'none';
       toggleButton.textContent = '+';
