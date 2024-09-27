@@ -639,17 +639,6 @@
 		return courseID.replace(/([a-zA-Z]+)(\d+)/, '$1 $2');
 	}
 
-	// Initialize: validate courses, update credits, and sort courses alphabetically on page load
-	window.onload = function () {
-		semesters.forEach(semester => {
-			const courseList = semester.querySelector('.course-list');
-			sortCourses(courseList);  // Sort courses alphabetically within each column
-		});
-		validateAllCourses();
-		updateCredits();
-	};
-
-
 	// Attach click listener to the "Load from file..." button
 	document.getElementById('trigger-load-xml-file').addEventListener('click', () => {
 		document.getElementById('load-xml-file').click();  // Trigger file input
@@ -834,22 +823,22 @@
 	                    }
 	                });
 	            }
-
-	            // After loading, validate courses and update credits
-	            validateAllCourses();
-	            updateCredits();
 	        } catch (error) {
 	            console.error('Failed to load data from URL:', error);
 	        }
 	    }
 	}
 
-	// Run this on page load
+	// Initialize: load from URL, validate courses, update credits, and sort courses alphabetically on page load
 	window.onload = function () {
 	    loadFromURL();  // Load from URL if present
-	    // Other initialization code
+	    semesters.forEach(semester => {
+			const courseList = semester.querySelector('.course-list');
+			sortCourses(courseList);  // Sort courses alphabetically within each column
+		});
+		validateAllCourses();
+		updateCredits();
 	};
-
 
 	// Toggle instructions section
 	document.getElementById('instructions-toggle').addEventListener('click', function() {
