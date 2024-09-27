@@ -77,6 +77,7 @@
 	}
 	h1 {
 		font-size: 24px;
+		width: 768px;
 	}
 	h3 {
 		text-align: center;
@@ -99,7 +100,7 @@
 	<h1>Biological Engineering Course Planner</h1>
 
 	<!-- Load and Save buttons -->
-	<div style="text-align: left; margin-top: 20px; margin-bottom: 20px;">
+	<div style="text-align: left; margin-top: 20px; margin-bottom: 20px; width: 768px;">
 		<input type="file" id="load-xml-file" title="Load XML file" style="display:none;" accept=".xml">
 		<button id="trigger-load-xml-file">Load from XML...</button>
 		<button id="save-xml-file">Save to XML</button>
@@ -116,6 +117,7 @@
 		<p>If a <em>course</em> is highlighted in <span style="background-color:#ffcccb;">red</span>, click its "<strong>+</strong>" button to see which requirements (highlighted in <span style="background-color:yellow;">yellow</span>) are being violated.</p>
 		<p>If a <em>semester</em> is highlighted in <span style="background-color:#ffcccb;">red</span>, then more than 18 credit hours are currently planned for that semester (or more than 6 credit hours, if it's a summer semester).</p>
 		<p>Once you’re finished, click "Save to XML" to save the current course plan. If you already have a previously saved course plan, you can load it by clicking "Load from XML...".</p>
+		<p>Click "Copy shareable link" if you prefer to share a link to the current course plan instead of a file.</p>
 	</div>
 
 
@@ -847,6 +849,7 @@
 	    loadFromURL();  // Load from URL if present
 	    // Other initialization code
 	};
+
 
 	// Toggle instructions section
 	document.getElementById('instructions-toggle').addEventListener('click', function() {
