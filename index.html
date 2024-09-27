@@ -752,7 +752,7 @@
 
 		// Use html2canvas to capture the body content as an image
 		html2canvas(document.body, {
-			scale: 2,  // Improve resolution by scaling
+			scale: 1,  // Improve resolution (and file size) by setting scale > 1, if desired
 			useCORS: true,  // Enable cross-origin resource sharing
 			windowWidth: document.body.scrollWidth,  // Capture full width of the page
 			windowHeight: document.body.scrollHeight  // Capture full height of the page
