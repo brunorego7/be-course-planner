@@ -480,8 +480,9 @@
 			// Set credit limits: 6 for summer, 18 for other semesters
 			const creditLimit = semesterType === 'Su' ? 6 : 18;
 
-			// Mark the semester as invalid if total credits exceed the limit
-			if (totalCredits <= creditLimit) {
+			// Mark the semester as invalid if total credits exceed the limit (but not for "Completed Credits" column,
+			// whose semesterType is '')
+			if (totalCredits <= creditLimit || semesterType === '') {
 				semester.classList.remove('invalid');
 				creditDisplay.classList.remove('invalid');
 			} else {
