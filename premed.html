@@ -3,7 +3,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Biological Engineering Course Planner</title>
+	<title>Biological Engineering Pre-Med Course Planner</title>
 	<style>
 	body {
 		font-family: Arial, Helvetica, sans-serif;
@@ -39,6 +39,9 @@
 	.course.very-difficult {
 		border-color: #f28c28;
 		background-color: #ffd580;
+	}
+	.course.premed {
+		border-color: green;
 	}
 	.course.invalid {
 		border-color: red;
@@ -99,7 +102,7 @@
 </head>
 <body>
 
-	<h1>Biological Engineering <em>Pre-Med</em> Course Planner</h1>
+	<h1>Biological Engineering <em style="color: green;">Pre-Med</em> Course Planner</h1>
 
 	<!-- Load and Save buttons -->
 	<div style="text-align: left; margin-top: 20px; margin-bottom: 20px; width: 768px;">
@@ -138,11 +141,11 @@
 			<div class="credits"><span id="year1-fall-credits">0</span></div>
 			<div class="course-list">
 				<div class="course" draggable="true" id="BE1251" data-prerequisites="none" data-corequisites="none" data-semesters="F" data-credits="2">BE 1251: Introduction to Engineering Methods</div>
-				<div class="course" draggable="true" id="CHEM1201" data-prerequisites="none" data-corequisites="none" data-semesters="F,S,Su" data-credits="3">CHEM 1201: General Chemistry I</div>
-				<div class="course" draggable="true" id="BIOL1201" data-prerequisites="none" data-corequisites="none" data-semesters="F,S,Su" data-credits="3">BIOL 1201: Biology for Science Majors I</div>
+				<div class="course premed" draggable="true" id="CHEM1201" data-prerequisites="none" data-corequisites="none" data-semesters="F,S,Su" data-credits="3">CHEM 1201: General Chemistry I</div>
+				<div class="course premed" draggable="true" id="BIOL1201" data-prerequisites="none" data-corequisites="none" data-semesters="F,S,Su" data-credits="3">BIOL 1201: Biology for Science Majors I</div>
 				<div class="course difficult" draggable="true" id="MATH1550" data-prerequisites="none" data-corequisites="none" data-semesters="F,S,Su" data-credits="5">MATH 1550: Differential and Integral Calculus</div>
-				<div class="course" draggable="true" id="BIOL1208" data-prerequisites="none" data-corequisites="BIOL1201" data-semesters="F,S,Su" data-credits="1">BIOL 1208: Biology Laboratory for Science Majors I</div>
-				<div class="course" draggable="true" id="ENGL1001" data-prerequisites="none" data-corequisites="none" data-semesters="F,S,Su" data-credits="3">ENGL 1001: English Composition</div>
+				<div class="course premed" draggable="true" id="BIOL1208" data-prerequisites="none" data-corequisites="BIOL1201" data-semesters="F,S,Su" data-credits="1">BIOL 1208: Biology Laboratory for Science Majors I</div>
+				<div class="course premed" draggable="true" id="ENGL1001" data-prerequisites="none" data-corequisites="none" data-semesters="F,S,Su" data-credits="3">ENGL 1001: English Composition</div>
 			</div>
 		</div>
 
