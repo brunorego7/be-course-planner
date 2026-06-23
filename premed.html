@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pre-med planner moved — LSU BE Course Planner</title>
+<meta name="robots" content="noindex">
+<style>
+  html,body{height:100%;margin:0;}
+  body{font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;background:#f3f2f7;color:#1c1a26;
+    display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;}
+  .card{max-width:460px;}
+  h1{font-family:'Space Grotesk','Segoe UI',system-ui,sans-serif;font-weight:600;font-size:19px;margin:0 0 8px;letter-spacing:-.01em;}
+  p{color:#55506a;font-size:14px;line-height:1.5;margin:0 0 16px;}
+  a{display:inline-block;background:#461D7C;color:#fff;text-decoration:none;font-weight:600;font-size:14px;
+    padding:10px 18px;border-radius:9px;}
+  a:hover{background:#2f1457;}
+  .small{font-size:12px;color:#6b6680;margin-top:14px;}
+</style>
+<script>
+// The pre-med planner is now the "Pre-med" track inside the main planner.
+// Forward any existing pre-med share link to index.html on the pre-med track,
+// passing the ?data= payload through verbatim so it reaches the app exactly as a
+// direct index.html?track=premed&data=… link would (the app migrates the old format).
+(function(){
+  try{
+    var m=(window.location.search||'').match(/[?&]data=([^&]*)/);
+    var dest='index.html?track=premed'+(m?('&data='+m[1]):'');
+    window.location.replace(dest);
+  }catch(e){ /* fall through to the manual link below */ }
+})();
+</script>
+</head>
+<body>
+  <div class="card">
+    <h1>The pre-med planner has moved</h1>
+    <p>It’s now the <strong>Pre-med</strong> track inside the main course planner. You should be redirected automatically — your saved plan link is being carried over.</p>
+    <p><a id="go" href="index.html?track=premed">Open the planner →</a></p>
+    <p class="small">If you bookmarked this page, please update it to the main planner.</p>
+  </div>
+  <script>
+    // Keep the manual link's payload intact too, in case the auto-redirect was blocked.
+    (function(){
+      try{
+        var m=(window.location.search||'').match(/[?&]data=([^&]*)/);
+        if(m){var a=document.getElementById('go');a.href='index.html?track=premed&data='+m[1];}
+      }catch(e){}
+    })();
+  </script>
+</body>
+</html>

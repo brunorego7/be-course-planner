@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LSU BE Course Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><span class="mark">LSU BE Course Planner</span></div>
+  <div class="prog" title="Gold = credits you’ve completed (AP / transfer counts automatically). Faint = credits in your plan.">
+    <div class="track"><div class="plan" id="prog-plan"></div><div class="done" id="prog-done"></div></div>
+    <span class="lbl"><b id="prog-num">0</b> / <span id="prog-target">128</span> credits completed</span>
+  </div>
+  <div class="spacer"></div>
+  <div class="acts">
+    <button class="btn" id="btn-share" title="Copy a link that reopens this exact plan">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Copy link</button>
+    <button class="btn" id="btn-print" title="Print or Save as PDF">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print / PDF</button>
+    <input type="file" id="file-load" accept=".json,.xml" style="display:none">
+    <button class="btn" id="btn-reset">Reset</button>
+  </div>
+</header>
+
+<div class="page">
+  <div class="intro">
+    <div>
+      <h1>Plan your Biological Engineering degree</h1>
+      <p>Drag courses into the semester you’ll take them. The planner checks prerequisites, corequisites, and credit loads as you go.</p>
+      <button class="htoggle" id="tour-btn">Take a tour</button>
+      <a class="htoggle doclink" href="documentation.html">Full documentation →</a>
+    </div>
+    <div class="trackbox">
+      <span class="trackcap">Curriculum track</span>
+      <div class="trackswitch" role="group" aria-label="Curriculum track">
+        <button class="tsw" id="tsw-standard" data-track="standard" type="button">Standard</button>
+        <button class="tsw" id="tsw-premed" data-track="premed" type="button">Pre-med</button>
+      </div>
+      <span class="tracknote" id="track-note"></span>
+    </div>
+  </div>
+
+  <div class="phead">
+    <span class="t">Your plan</span>
+    <span class="spacer" style="flex:1"></span>
+    <button class="addterm autobtn" id="btn-auto" title="Optimally arrange every not-yet-completed course across your current semesters"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v4M3 5h4M6 17v4M4 19h4"/><path d="M13 3l2.4 6.6L22 12l-6.6 2.4L13 21l-2.4-6.6L4 12l6.6-2.4z"/></svg><span class="lbl"><span class="li">Auto-arrange</span><span class="lb">Arranging…</span></span></button>
+    <button class="addterm" id="btn-addterm" title="Add a semester to your plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Add semester</button>
+    <div style="display:inline-flex;gap:5px;margin-left:5px">
+      <button class="chev" id="sc-left" title="Scroll left" aria-label="Scroll left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <button class="chev" id="sc-right" title="Scroll right" aria-label="Scroll right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18l6-6-6-6"/></svg></button>
+    </div>
+  </div>
+
+  <div class="ledger" id="ledger"></div>
+
+  <div class="foot">
+    <section class="issues" id="issues">
+      <div class="ih" id="ih">
+        <span class="p clear" id="ipill">All clear</span>
+        <span class="tt">Things to review</span>
+        <span class="c2"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span>
+      </div>
+      <div class="ib" id="ib"></div>
+    </section>
+    <aside class="legend">
+      <h4>Difficulty</h4>
+      <div class="lg"><span class="t-dbadge avg">difficult</span> Aim for ≤ 2 per semester</div>
+      <div class="lg"><span class="t-dbadge most">very difficult</span> Aim for ≤ 1 per semester</div>
+      <div class="note">Each semester header tallies these (e.g., <span class="tcount avg">2</span> difficult, <span class="tcount most">1</span> very difficult).</div>
+      <h4 style="margin-top:14px">Status</h4>
+      <div class="lg"><span class="sq" style="border-color:var(--bad-edge);background:var(--bad-tint)"></span> A requirement is broken. Open “view details.”</div>
+      <div class="lg"><span class="t-done locked"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg></span> Checked = completed, counts toward the progress bar.</div>
+      <div class="lg"><span class="t-premed">Pre-med</span> On the pre-med track, a medical school prerequisite.</div>
+    </aside>
+  </div>
+  <p class="credit-line">Developed by <a href="https://www.lsu.edu/eng/bae/people/faculty/bruno-rego.php" target="_blank" rel="noopener">Dr. Bruno Rego</a>.</p>
+</div>
+
+<div id="pop-host"></div>
+<div class="toasts" id="toasts"></div>
+
+<script src="planner.js"></script>
+<script src="app.js"></script>
+<script src="tour.js"></script>
+</body>
+</html>

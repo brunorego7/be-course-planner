@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LSU BE Course Planner: How It Works</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  /* ----- documentation-only styles (the planner's tokens, a reading layout) ----- */
+  .doc-hero{background:var(--surface);border-bottom:1px solid var(--line);padding:38px 20px 30px;}
+  .doc-hero-in{max-width:1140px;margin:0 auto;}
+  .doc-eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--purple);font-weight:600;}
+  .doc-hero h1{font-family:var(--f-disp);font-weight:700;letter-spacing:-.025em;font-size:clamp(28px,4.4vw,42px);line-height:1.05;margin:10px 0 0;color:var(--ink);max-width:18ch;}
+  .doc-hero p{font-size:16px;line-height:1.6;color:var(--ink-soft);max-width:64ch;margin:16px 0 0;}
+  .doc-meta{margin-top:20px;font-family:var(--f-mono);font-size:12px;color:var(--ink-faint);display:flex;gap:18px;flex-wrap:wrap;}
+  .doc-meta b{color:var(--ink-soft);font-weight:600;}
+
+  .doc-shell{max-width:1140px;margin:0 auto;padding:34px 20px 80px;display:grid;grid-template-columns:210px minmax(0,1fr);gap:48px;align-items:start;}
+  .toc{position:sticky;top:74px;font-family:var(--f-mono);font-size:12.5px;line-height:1.5;}
+  .toc .toc-h{text-transform:uppercase;letter-spacing:.12em;color:var(--ink-faint);font-size:11px;margin-bottom:12px;}
+  .toc ol{list-style:none;margin:0;padding:0;counter-reset:toc;}
+  .toc li{counter-increment:toc;margin:0 0 9px;}
+  .toc a{display:flex;gap:9px;color:var(--ink-soft);text-decoration:none;padding:2px 0;border-left:2px solid transparent;padding-left:12px;margin-left:-14px;transition:color .12s,border-color .12s;}
+  .toc a::before{content:counter(toc,decimal-leading-zero);color:var(--line-strong);font-weight:600;}
+  .toc a:hover{color:var(--purple);border-left-color:var(--gold);}
+
+  .doc-main{max-width:760px;min-width:0;}
+  .doc-main section{padding-top:14px;margin-bottom:46px;scroll-margin-top:72px;}
+  .doc-main section>.num{font-family:var(--f-mono);font-size:12px;color:var(--purple);font-weight:600;letter-spacing:.08em;}
+  .doc-main h2{font-family:var(--f-disp);font-weight:600;letter-spacing:-.02em;font-size:25px;line-height:1.15;margin:6px 0 16px;color:var(--ink);}
+  .doc-main h3{font-family:var(--f-disp);font-weight:600;font-size:17px;margin:30px 0 8px;color:var(--ink);}
+  .doc-main p{font-size:15px;line-height:1.68;color:#39354a;margin:0 0 14px;}
+  .doc-main li{font-size:15px;line-height:1.62;color:#39354a;margin:0 0 8px;}
+  .doc-main ul,.doc-main ol{padding-left:22px;margin:0 0 16px;}
+  .doc-main strong{color:var(--ink);font-weight:600;}
+  .doc-main a{color:var(--purple);text-decoration:underline;text-decoration-color:var(--line-strong);text-underline-offset:2px;}
+  .lead{font-size:16.5px!important;line-height:1.6!important;color:var(--ink-soft)!important;}
+
+  .pts{font-family:var(--f-mono);font-size:.86em;font-weight:600;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:var(--purple);white-space:nowrap;}
+  code{font-family:var(--f-mono);font-size:.86em;background:var(--surface-2);border:1px solid var(--line);border-radius:5px;padding:1px 5px;color:var(--hardest-edge);}
+
+  table.doc-tbl{width:100%;border-collapse:collapse;margin:8px 0 18px;font-size:14px;}
+  .doc-tbl th{text-align:left;font-family:var(--f-mono);font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-faint);font-weight:600;border-bottom:2px solid var(--line-strong);padding:0 14px 8px 0;}
+  .doc-tbl td{border-bottom:1px solid var(--line);padding:11px 14px 11px 0;color:#39354a;vertical-align:top;line-height:1.45;}
+  .doc-tbl td:last-child,.doc-tbl th:last-child{padding-right:0;}
+  .doc-tbl tr:last-child td{border-bottom:none;}
+  .doc-tbl .mono{font-family:var(--f-mono);font-weight:600;color:var(--ink);white-space:nowrap;}
+
+  .tier{display:inline-flex;align-items:center;gap:7px;font-weight:600;color:var(--ink);}
+  .tier .dot{width:10px;height:10px;border-radius:3px;flex:none;}
+  .dot.normal{background:var(--line-strong);}
+  .dot.gened{background:#9b8fc4;}
+  .dot.hard{background:var(--hard-edge);}
+  .dot.hardest{background:var(--hardest-edge);}
+
+  .callout{border:1px solid var(--line);border-left:3px solid var(--purple);background:var(--surface);border-radius:10px;padding:16px 18px;margin:18px 0;box-shadow:var(--shadow-sm);}
+  .callout.gold{border-left-color:var(--gold);}
+  .callout.warm{border-left-color:var(--hard-edge);}
+  .credit-line{margin:20px 2px 4px;font-size:11.5px;color:var(--ink-faint);}
+  .credit-line a{color:var(--purple);}
+  .callout h4{font-family:var(--f-disp);font-weight:600;font-size:14.5px;margin:0 0 7px;color:var(--ink);}
+  .callout p{font-size:14px;line-height:1.6;margin:0 0 8px;color:#4a455c;}
+  .callout p:last-child{margin:0;}
+
+  .scorecard{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:18px 0;box-shadow:var(--shadow-sm);}
+  .score-row{display:grid;grid-template-columns:96px 1fr;gap:0;border-bottom:1px solid var(--line);}
+  .score-row:last-child{border-bottom:none;}
+  .score-strength{display:flex;align-items:center;justify-content:center;text-align:center;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;font-weight:600;color:#fff;padding:14px 8px;line-height:1.3;}
+  .s-abs{background:var(--purple-deep);}
+  .s-strong{background:var(--purple);}
+  .s-med{background:#7a5bb0;}
+  .s-soft{background:#a99bcb;}
+  .score-body{padding:13px 16px;}
+  .score-body b{font-family:var(--f-disp);font-size:14.5px;color:var(--ink);display:block;margin-bottom:3px;}
+  .score-body span{font-size:13.5px;line-height:1.5;color:#4a455c;}
+
+  .doc-foot{border-top:1px solid var(--line);max-width:1140px;margin:0 auto;padding:24px 20px 60px;font-family:var(--f-mono);font-size:12px;color:var(--ink-faint);line-height:1.6;}
+
+  @media (max-width:880px){
+    .doc-shell{grid-template-columns:1fr;gap:0;}
+    .toc{position:static;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:30px;background:var(--surface);}
+    .toc ol{columns:2;column-gap:24px;}
+    .score-row{grid-template-columns:80px 1fr;}
+    .doc-main section{scroll-margin-top:100px;}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><span class="mark">LSU BE Course Planner</span></div>
+  <span class="chip" style="min-width:auto">Documentation</span>
+  <div class="spacer"></div>
+  <div class="acts"><a class="btn" href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Open the planner</a></div>
+</header>
+
+<div class="doc-hero">
+  <div class="doc-hero-in">
+    <h1>The logic behind the course planner</h1>
+    <p>The planner does two things you can see on screen: it tracks your progress toward the degree, and it lays out every remaining course across your semesters at the press of a button. This page is about what happens underneath that button. It walks through how the planner estimates the workload of each course, the rules it always follows when it builds a plan, and how it decides where every course goes. It is written for students, advisors, and faculty who want the full picture.</p>
+    <div class="doc-meta"><span><b>Degree:</b> BS, Biological Engineering · 128 credits</span><span><b>Tracks:</b> Standard &amp; Pre-med</span></div>
+  </div>
+</div>
+
+<div class="doc-shell">
+  <nav class="toc" aria-label="Contents">
+    <div class="toc-h">Contents</div>
+    <ol>
+      <li><a href="#points">Credit hours vs. difficulty points</a></li>
+      <li><a href="#plans">The recommended plans</a></li>
+      <li><a href="#arranger">The auto-arranger</a></li>
+      <li><a href="#rules">Rules it never breaks</a></li>
+      <li><a href="#priorities">What it balances, in order</a></li>
+      <li><a href="#algorithm">How the optimization works</a></li>
+      <li><a href="#knobs">Current settings</a></li>
+      <li><a href="#decisions">Other design decisions</a></li>
+      <li><a href="#scope">Scope, privacy &amp; caveats</a></li>
+    </ol>
+  </nav>
+
+  <main class="doc-main">
+
+    <section id="points">
+      <div class="num">01</div>
+      <h2>Credit hours vs. difficulty points</h2>
+      <p>Every course in the planner carries two numbers. One of them is official and on display. The other works quietly in the background, and it is the reason the auto-arrange feature can do anything useful.</p>
+      <p><strong>Credit hours</strong> are the official figure. They count toward the 128 credits you need to graduate, and they are what the progress bar and the per-semester credit totals report.</p>
+      <p><strong>Difficulty points</strong> are an estimate of how much <em>work</em> a course is, which is a different question from how many credits it carries. A three-credit thermodynamics course and a three-credit elective look identical on a transcript, but they do not take the same toll on a given week. Difficulty points let the planner even out that real workload across your semesters instead of just evening out credit counts. You never see a difficulty-point number anywhere in the tool. What you see is the balanced plan it produces, plus a plain <em>difficult</em> or <em>very difficult</em> label on the heavier courses.</p>
+
+      <p>A course's difficulty points are its credit hours times a factor that depends on its tier:</p>
+      <table class="doc-tbl">
+        <thead><tr><th>Tier</th><th>Factor</th><th>A 3-credit course is worth</th><th>Typical courses</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tier"><span class="dot gened"></span>General education</span></td><td class="mono">0.9×</td><td><span class="pts">2.7 pts</span></td><td>Humanities, social science, art, free electives, English composition</td></tr>
+          <tr><td><span class="tier"><span class="dot normal"></span>Standard</span></td><td class="mono">1.0×</td><td><span class="pts">3.0 pts</span></td><td>Most major and science courses</td></tr>
+          <tr><td><span class="tier"><span class="dot hard"></span>Difficult</span></td><td class="mono">1.5×</td><td><span class="pts">4.5 pts</span></td><td>Calculus, Differential Equations, Organic Chemistry, Microbiology</td></tr>
+          <tr><td><span class="tier"><span class="dot hardest"></span>Very difficult</span></td><td class="mono">2.0×</td><td><span class="pts">6.0 pts</span></td><td>Statics, Dynamics, Thermodynamics, Fluid Mechanics, the calculus-based physics sequence</td></tr>
+        </tbody>
+      </table>
+      <p>General-education courses sit a little under a full credit hour for two reasons. They tend to be lighter at the same credit count, and the small discount also lets the auto-arranger tell a gen-ed apart from a major course of the same weight when it has to break a tie. Every other course is placed in one of the three tiers above, assigned by hand.</p>
+
+      <h3>Senior design is weighted on purpose</h3>
+      <p>Senior design gets a higher weight that is set by hand rather than read off the tiers above. Capstone design is mostly project work, and the team meetings, prototyping, and testing that go into it eat up far more time than three credit hours would suggest, most of it outside of class. To leave room for that, the planner counts Senior Design I as twice its credits and Senior Design II as three times its credits, which pushes the auto-arranger to keep the rest of the senior year on the lighter side.</p>
+      <table class="doc-tbl">
+        <thead><tr><th>Course</th><th>Counts as</th><th>Points for its 3 credits</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">Senior Design I</td><td class="mono">2× its credits</td><td><span class="pts">6.0 pts</span></td></tr>
+          <tr><td class="mono">Senior Design II</td><td class="mono">3× its credits</td><td><span class="pts">9.0 pts</span></td></tr>
+        </tbody>
+      </table>
+      <p>Because these weights are plain multiples of credits, senior design does not belong to a difficulty tier and carries no difficulty label, so you will not see one on it. The extra weight is just a way to nudge the auto-arranger, not a claim that the course is academically harder than anything else in the curriculum.</p>
+    </section>
+
+    <section id="plans">
+      <div class="num">02</div>
+      <h2>The recommended plans</h2>
+      <p>The planner starts from the department's recommended four-year sequences, one for the standard track and one for the pre-med track, both matching the <a href="https://www.lsu.edu/eng/bae/students/undergraduate/course-flowcharts.php" target="_blank" rel="noopener">official flowcharts</a>. From there, you can rearrange courses by hand, mark off work you have already finished (AP and transfer credit included, which are automatically marked as completed), and add summer semesters or a fifth and sixth year.</p>
+      <p>The recommended sequence is also the layout the auto-arranger leans back toward when nothing else argues for moving a course. The rest of this page is about what the auto-arranger does.</p>
+    </section>
+
+    <section id="arranger">
+      <div class="num">03</div>
+      <h2>The auto-arranger</h2>
+      <p>The <strong>Auto-arrange</strong> button takes every course you have not yet finished and drops it into the semesters you have open. It does not shuffle the flowchart or fall back on rules of thumb. It works the whole plan out from scratch, searching through the valid arrangements for the one that scores best against the priorities laid out below.</p>
+      <p>It works from wherever your plan already is. Anything you have marked complete stays put and counts as a prerequisite for what comes after it, and any semester you have opened is fair game, summers and extra years included. From there, it treats the job as two layers: a set of <strong>rules it will not break</strong>, and a set of <strong>preferences it balances</strong> as well as it can.</p>
+      <div class="callout gold">
+        <h4>Check off your completed semesters first</h4>
+        <p>The auto-arranger will place courses into any open semester, including ones you have already been through. Before you run it, make sure every semester you have finished is fully checked off, with all of its courses marked complete. That tells the auto-arranger those semesters are done, so it leaves them alone instead of dropping new courses into them.</p>
+      </div>
+    </section>
+
+    <section id="rules">
+      <div class="num">04</div>
+      <h2>Rules it never breaks</h2>
+      <p>These are hard constraints. The auto-arranger will not return a plan that violates any of them:</p>
+      <ul>
+        <li><strong>Prerequisites.</strong> A course is always placed in a later semester than every prerequisite it requires.</li>
+        <li><strong>Corequisites.</strong> A course is placed in the same semester as its corequisite, or later.</li>
+        <li><strong>Semester availability.</strong> A course only lands in a semester it is actually offered in, according to the catalog, whether that is fall, spring, or summer.</li>
+        <li><strong>Senior design sequence.</strong> Senior Design I and II are always back to back, fall then the following spring of the same year.</li>
+        <li><strong>Junior/senior standing for design electives.</strong> A design elective is only placed once at least 60 credits have been earned in earlier semesters (counting AP and transfer credit).</li>
+      </ul>
+      <p>Because these are enforced directly, the resulting plan is always internally valid. The same checks that flag a problem when you drag a course into the wrong place come up clean after an auto-arrange.</p>
+    </section>
+
+    <section id="priorities">
+      <div class="num">05</div>
+      <h2>What it balances, in order</h2>
+      <p>Everything that is a preference rather than a hard rule is rolled into a single <strong>score</strong>. A plan picks up penalty points whenever it falls short of one of these preferences, weighted by how much that preference matters, and the auto-arranger hunts for the valid plan with the lowest total. In practice, that sets up a priority order: when two preferences pull in opposite directions, the stronger one wins. Strongest first:</p>
+
+      <div class="scorecard">
+        <div class="score-row"><div class="score-strength s-abs">Near-<br>absolute</div><div class="score-body"><b>Stay within credit bands</b><span>Each fall and spring semester should land between 12 and 18 credits, and each summer should stay at 6 or under. This carries so much weight that the auto-arranger treats it as all but mandatory, bending only if a plan truly cannot fit any other way.</span></div></div>
+        <div class="score-row"><div class="score-strength s-strong">Strong</div><div class="score-body"><b>Pre-med timing (pre-med track only)</b><span>Medical school prerequisites should be finished by the end of Year 3 Fall, ahead of a typical MCAT. Anything that slips past that is penalized, and more so the later it lands.</span></div></div>
+        <div class="score-row"><div class="score-strength s-strong">Strong</div><div class="score-body"><b>Spread out design electives</b><span>No more than one design elective per semester. The list of design electives on offer in any given semester is fairly short, so fitting several of them into one semester, around your core courses and among the ones that actually interest you, is often impractical.</span></div></div>
+        <div class="score-row"><div class="score-strength s-strong">Strong</div><div class="score-body"><b>Keep senior design in place</b><span>Senior design is pinned to its recommended year far more firmly than any other course, so the workload balancing cannot quietly drag the capstone earlier.</span></div></div>
+        <div class="score-row"><div class="score-strength s-med">Moderate</div><div class="score-body"><b>Keep labs with their lectures</b><span>A lab and the lecture it pairs with should sit in the same semester rather than being split across two.</span></div></div>
+        <div class="score-row"><div class="score-strength s-med">Moderate</div><div class="score-body"><b>Spread out humanities</b><span>All else equal, no more than one humanities course per semester. This is the same idea as the design-elective rule, at half the strength (since there are many more humanities courses to choose from).</span></div></div>
+        <div class="score-row"><div class="score-strength s-med">Moderate</div><div class="score-body"><b>Balance the workload</b><span>Even out the difficulty points across all of your semesters as far as the other priorities allow, and when summers are open, move load into them, since a summer is a natural place to take pressure off a packed year. <strong>This is the part that uses difficulty points rather than raw credits.</strong></span></div></div>
+        <div class="score-row"><div class="score-strength s-soft">Gentle</div><div class="score-body"><b>Stay close to the recommended sequence</b><span>All else equal, keep each course close to its flowchart position. This one is kept gentle on purpose, so the balancing above has room to work, and it only applies to courses whose order actually matters academically (the next two sections get into which).</span></div></div>
+      </div>
+    </section>
+
+    <section id="algorithm">
+      <div class="num">06</div>
+      <h2>How the optimization works</h2>
+      <p>Laying out a few dozen courses across up to about a dozen semesters opens up an astronomical number of possible arrangements, far too many to check one at a time. Rather than guess, the planner solves the problem exactly, with a method called <strong>mixed-integer linear programming</strong>.</p>
+      <p>The whole problem gets turned into math. Every question of the form "does this course go in this semester?" becomes a yes or a no, written as a 1 or a 0. The hard rules become equations and inequalities those answers have to satisfy, and the scorecard above becomes a single number to drive as low as possible. A solver then chews through all of it. The planner uses <a href="https://highs.dev/" target="_blank" rel="noopener">HiGHS</a>, a well-regarded open-source optimizer. It does not look at every arrangement one by one. It uses mathematical bounds to rule out entire families of options that cannot beat the best one it has already found, throwing them out in bulk, and that is how an otherwise impossible search finishes in a few seconds.</p>
+      <p>A few things follow from doing it this way:</p>
+      <ul>
+        <li><strong>It is effectively optimal.</strong> The solver stops as soon as it can prove the plan is within a small margin, about 5%, of the theoretical best. That trades a little quality for a lot of speed, and for arranging courses, the result is indistinguishable from optimal.</li>
+        <li><strong>It is deterministic.</strong> The same starting plan always produces the same result. Nothing about it is random.</li>
+        <li><strong>It handles a late start or a fifth year.</strong> The "stay close to the recommended sequence" preference looks only at where a course sits <em>relative to the rest of your plan</em>, not at the calendar year it falls in. If you begin partway through the sequence or spread the degree over five or six years, the whole thing can slide together at no cost. Only real reorderings get charged.</li>
+      </ul>
+    </section>
+
+    <section id="knobs">
+      <div class="num">07</div>
+      <h2>Current settings</h2>
+      <p>The table below lists the planner's main settings and the values they are set to now.</p>
+      <table class="doc-tbl">
+        <thead><tr><th>Setting</th><th>Current value</th><th>What it controls</th></tr></thead>
+        <tbody>
+          <tr><td>Difficult multiplier</td><td class="mono">1.5×</td><td>How much heavier a "difficult" course counts than its credit hours when balancing semesters.</td></tr>
+          <tr><td>Very difficult multiplier</td><td class="mono">2.0×</td><td>The same, for the hardest tier.</td></tr>
+          <tr><td>General-education weight</td><td class="mono">0.9×</td><td>How much lighter a gen-ed counts than its credit hours.</td></tr>
+          <tr><td>Senior design weight</td><td class="mono">2× / 3×</td><td>Senior Design I counts as twice its credits and Senior Design II as three times, set directly to keep the rest of the senior year lighter.</td></tr>
+          <tr><td>Credit band, fall/spring</td><td class="mono">12–18</td><td>The target credit range per regular semester.</td></tr>
+          <tr><td>Credit band, summer</td><td class="mono">≤ 6</td><td>The target cap per summer semester.</td></tr>
+          <tr><td>Design-elective spacing</td><td class="mono">1 / semester</td><td>The preferred maximum number of design electives in one semester.</td></tr>
+          <tr><td>Humanities spacing</td><td class="mono">1 / semester</td><td>The preferred maximum number of humanities in one semester (enforced at half the strength of design electives).</td></tr>
+          <tr><td>Design-elective standing</td><td class="mono">60 credits</td><td>Credits that must be earned before a design elective may be placed.</td></tr>
+          <tr><td>Pre-med target</td><td class="mono">Year 3 Fall</td><td>The semester by which medical school prerequisites should be complete.</td></tr>
+          <tr><td>Maximum plan length</td><td class="mono">6 years</td><td>How far out the planner allows a degree to stretch.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="decisions">
+      <div class="num">08</div>
+      <h2>Other design decisions</h2>
+
+      <h3>Gen-eds and electives float freely</h3>
+      <p>Humanities, social science, art, free electives, technical electives, design electives, and the English-composition courses are <strong>not</strong> tied to their flowchart position. Where they fall in the sequence does not carry the academic meaning that the core science and engineering chain does, so the auto-arranger can put them wherever balances the plan best. It still respects their hard rules, like the 60-credit gate on design electives and the prerequisite tying the two English courses together. The core STEM courses, by contrast, are gently biased to stay close to their recommended order.</p>
+
+      <h3>Summers are relief valves</h3>
+      <p>The auto-arranger never puts courses into a summer on its own. Opening a summer semester is a deliberate move on your part. Once one is open, though, it becomes the preferred place to offload work, which is what makes genuinely lighter fall and spring semesters possible. With no summer semester at all, the eight regular semesters are already close to full just to fit a complete degree, so there is not much room to lighten any single one of them.</p>
+
+      <h3>The pre-med track</h3>
+      <p>The pre-med track carries a different course set. It adds the medical school prerequisites and gives up the free and technical electives to make room, and it brings in the timing preference described above so those prerequisites land before the MCAT window. Everything else about the auto-arranger is the same.</p>
+
+      <h3>Difficulty flags you do see</h3>
+      <p>Although the point values stay behind the scenes, each course's tier still shows up as a small flag on difficult and very difficult courses, and each semester shows a count of how many heavy courses it holds. That gives you a quick read on whether a semester is loaded with hard material.</p>
+    </section>
+
+    <section id="scope">
+      <div class="num">09</div>
+      <h2>Scope, privacy &amp; caveats</h2>
+      <div class="callout">
+        <h4>This is an advising aid, not your official degree audit</h4>
+        <p>The planner reflects the recommended curriculum and the rules above, but it is not a substitute for the General Catalog or a degree audit. Confirm the details that matter, like exact requirement options, course substitutions, and what is actually being offered, with your advisor and the catalog.</p>
+      </div>
+      <div class="callout gold">
+        <h4>Everything stays on your device</h4>
+        <p>The planner runs entirely in your browser. No plan is ever sent to a server, and the auto-arranger does all its work on your own machine. Your plan is saved locally, and you can share it with an advisor through a link that carries the entire plan inside the URL. Nothing is stored on our end.</p>
+      </div>
+      <div class="callout">
+        <h4>The difficulty tiers are a rough guide</h4>
+        <p>The difficulty tiers are loosely based on what students have reported over the years. They are a rough guide to relative workload, not a precise prediction of how hard any one course will turn out to be for any one student.</p>
+      </div>
+    </section>
+
+    <p class="credit-line">Developed by <a href="https://www.lsu.edu/eng/bae/people/faculty/bruno-rego.php" target="_blank" rel="noopener">Dr. Bruno Rego</a>.</p>
+
+  </main>
+</div>
+
+</body>
+</html>
