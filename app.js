@@ -512,7 +512,7 @@ function updateChevrons(){const led=el('ledger'),max=led.scrollWidth-led.clientW
 
 /* ===== share link ===== */
 function encodeState(){return btoa(unescape(encodeURIComponent(serialize())));}
-/* ===== compact share links (v4): far shorter URLs. Old ?data= links still load via decodePlan. ===== */
+/* ===== compact share links (v6): short, run-free, text-compressed URLs. Old ?data= links still load via decodePlan. ===== */
 // Frozen, APPEND-ONLY index of every placeable course/placeholder code. This order defines the positional
 // encoding below, so old links keep decoding correctly. Only ever append new codes; never reorder or remove
 // (leave the string in place as a tombstone if a course is retired). Codes missing here still round-trip;
@@ -521,52 +521,101 @@ const SHARE_CODES=["BE1251","CHEM1201","BIOL1201","MATH1550","BIOL1208","ENGL100
 // Frozen, APPEND-ONLY canonical term order. When a plan uses exactly these terms they are omitted from the
 // link entirely; a plan with added or removed terms carries its own list. Same rule: append only.
 const SHARE_TERMS=["completed","year1-fall","year1-spring","year2-fall","year2-spring","year3-fall","year3-spring","year4-fall","year4-spring"];
-// 64 URL-safe "digits" for single-character indices. '.' = course not placed. '~' separates fields.
+// 64 URL-safe base-64 "digits" used to render the packed map numbers. '~' separates the fields.
 const SHARE_ALPH="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
 function b64urlEncode(s){return btoa(unescape(encodeURIComponent(s))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
 function b64urlDecode(s){s=String(s).replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';return decodeURIComponent(escape(atob(s)));}
+function bytesToB64url(bytes){let s='';for(let i=0;i<bytes.length;i++)s+=String.fromCharCode(bytes[i]);return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+function b64urlToBytes(b64){b64=String(b64).replace(/-/g,'+').replace(/_/g,'/');while(b64.length%4)b64+='=';const s=atob(b64);const out=new Uint8Array(s.length);for(let i=0;i<s.length;i++)out[i]=s.charCodeAt(i);return out;}
+// Optional deflate compression for the text-heavy residual (notes, custom courses, filled-in gen-ed slots).
+// Uses the fflate library inlined at the bottom of this file; if it is somehow unavailable, links simply stay
+// uncompressed (longer but valid). deflateStr returns null when compression is unavailable or fails.
+function ffLib(){return (typeof fflate!=='undefined')?fflate:((typeof self!=='undefined'&&self.fflate)?self.fflate:null);}
+function deflateStr(str){const ff=ffLib();if(!ff)return null;try{return bytesToB64url(ff.deflateSync(ff.strToU8(str),{level:9}));}catch(e){return null;}}
+function inflateStr(b64){const ff=ffLib();if(!ff)return null;try{return ff.strFromU8(ff.inflateSync(b64urlToBytes(b64)));}catch(e){return null;}}
 // 12-bit integrity tag (2 URL-safe chars) so a truncated or corrupted ?p= link fails cleanly to the error
 // alert instead of silently decoding a partial plan. Not security; just tamper/truncation detection.
 function shareChk(s){var h=0;for(var i=0;i<s.length;i++){h=(Math.imul(h,31)+s.charCodeAt(i))>>>0;}return SHARE_ALPH.charAt((h>>>6)&63)+SHARE_ALPH.charAt(h&63);}
+// A term is just a year and a season, so it collapses to one small number: 0 = completed, otherwise
+// year*3 + season (fall/spring/summer = 0/1/2). This lets a non-default term set ride in the link as a short
+// string of one character per term instead of a JSON array of "yearN-season" strings.
+function termToCode(t){if(t==='completed')return 0;const m=/^year(\d+)-(fall|spring|summer)$/.exec(t);return m?parseInt(m[1],10)*3+{fall:0,spring:1,summer:2}[m[2]]:-1;}
+function codeToTerm(c){if(c===0)return 'completed';return 'year'+Math.floor(c/3)+'-'+['fall','spring','summer'][c%3];}
 
-// Serialize the whole plan to a compact, URL-safe string. The bulk (three course->term maps) becomes one
-// character per catalog course; only the irregular remainder (custom courses, notes, non-default terms) is
-// carried as a small base64url JSON blob.
+// Serialize the whole plan to a compact, URL-safe string. The three course->term maps carry the bulk: each is
+// packed as a single base-STATES number (one digit per catalog course, 0 = unplaced) rendered in base 64, so
+// there are no repeated-run patterns and 48 courses collapse to ~27 characters. Only the irregular remainder
+// (custom courses, notes, non-default terms) rides along as a small base64url JSON blob.
 function encodeStateCompact(){
   const st=state;
   const termsDefault=JSON.stringify(st.terms)===JSON.stringify(SHARE_TERMS);
   const termList=termsDefault?SHARE_TERMS:(st.terms||SHARE_TERMS);
   const tIdx={};termList.forEach((t,i)=>{tIdx[t]=i;});
+  const STATES=BigInt(termList.length+1);   // 0 = unplaced, 1..T = term index + 1
+  function bigToStr(v){if(v<=0n)return '';let s='';while(v>0n){s=SHARE_ALPH.charAt(Number(v%64n))+s;v=v/64n;}return s;}
   function encMap(map){
-    let s='';map=map||{};
-    for(let i=0;i<SHARE_CODES.length;i++){const t=map[SHARE_CODES[i]];s+=(typeof t==='string'&&tIdx[t]!=null)?SHARE_ALPH.charAt(tIdx[t]):'.';}
-    return s.replace(/\.+$/,'');
+    map=map||{};let v=0n;
+    // course 0 is the least significant digit, so trailing unplaced courses become leading zeros that vanish
+    for(let i=SHARE_CODES.length-1;i>=0;i--){const t=map[SHARE_CODES[i]];const val=(typeof t==='string'&&tIdx[t]!=null)?tIdx[t]+1:0;v=v*STATES+BigInt(val);}
+    return bigToStr(v);
   }
   const residual={};
-  if(!termsDefault)residual.t=st.terms;
+  if(!termsDefault){   // store terms as one char per term (year/season code); fall back to the array if any term can't be coded
+    let ok=true,s='';
+    for(const t of st.terms){const c=termToCode(t);if(c<0||c>=64){ok=false;break;}s+=SHARE_ALPH.charAt(c);}
+    residual.t=ok?s:st.terms;
+  }
+  // extras: any placement the positional maps cannot carry (custom/unknown code, or a term not in termList)
   const extra={};
-  ['std','pm','done'].forEach(mk=>{const map=st[mk]||{},sub={};for(const code in map){if(SHARE_CODES.indexOf(code)<0&&typeof map[code]==='string')sub[code]=map[code];}if(Object.keys(sub).length)extra[mk]=sub;});
+  ['std','pm','done'].forEach(mk=>{const map=st[mk]||{},sub={};for(const code in map){const t=map[code];if(typeof t==='string'&&(SHARE_CODES.indexOf(code)<0||tIdx[t]==null))sub[code]=t;}if(Object.keys(sub).length)extra[mk]=sub;});
   if(Object.keys(extra).length)residual.x=extra;
   const tm={},meta=st.tileMeta||{};
   for(const code in meta){if(meta[code]&&typeof meta[code]==='object'&&Object.keys(meta[code]).length)tm[code]=meta[code];}
   if(Object.keys(tm).length)residual.m=tm;
-  const res=Object.keys(residual).length?b64urlEncode(JSON.stringify(residual)):'';
-  const body='4~'+(st.track==='premed'?'p':'s')+'~'+encMap(st.std)+'~'+encMap(st.pm)+'~'+encMap(st.done)+'~'+res;
+  let res='';
+  if(Object.keys(residual).length){
+    const json=JSON.stringify(residual);
+    const plain='j'+b64urlEncode(json);    // 'j' = plain base64url JSON
+    const z=deflateStr(json);              // 'z' = deflated then base64url
+    // Compress only when it saves a real margin. This keeps lightly-annotated plans as plain links that open
+    // without fflate and skip a needless decompress; only genuinely text-heavy residuals pay for compression.
+    res=(z!=null&&z.length+1+16<=plain.length)?('z'+z):plain;
+  }
+  const body='6~'+(st.track==='premed'?'p':'s')+'~'+encMap(st.std)+'~'+encMap(st.pm)+'~'+encMap(st.done)+'~'+res;
   return body+shareChk(body);
 }
 
-// Inverse of encodeStateCompact. Returns a v3-shaped object, or null if the string is not a valid v4 payload.
+// Inverse of encodeStateCompact. Returns a v3-shaped object, or null if the string is not a valid v6 payload.
 function decodeStateCompact(str){
-  if(typeof str!=='string'||str.length<3||str.charAt(0)!=='4'||str.charAt(1)!=='~')return null;
+  if(typeof str!=='string'||str.length<3||str.charAt(0)!=='6'||str.charAt(1)!=='~')return null;
   const chk=str.slice(-2),body=str.slice(0,-2);
   if(shareChk(body)!==chk)return null;   // truncated or corrupted link
   const p=body.split('~');if(p.length<5)return null;
   let residual={};
-  if(p[5]){try{residual=JSON.parse(b64urlDecode(p[5]));}catch(e){return null;}}
-  const termList=Array.isArray(residual.t)?residual.t:SHARE_TERMS;
-  function decMap(s){const map={};s=s||'';for(let i=0;i<s.length&&i<SHARE_CODES.length;i++){const c=s.charAt(i);if(c==='.')continue;const ti=SHARE_ALPH.indexOf(c);if(ti<0||ti>=termList.length)continue;map[SHARE_CODES[i]]=termList[ti];}return map;}
+  if(p[5]){
+    const type=p[5].charAt(0),payload=p[5].slice(1);
+    let json;
+    if(type==='j'){try{json=b64urlDecode(payload);}catch(e){return null;}}
+    else if(type==='z'){json=inflateStr(payload);if(json==null)return null;}   // compressed but cannot inflate here
+    else return null;
+    try{residual=JSON.parse(json);}catch(e){return null;}
+  }
+  let termList;
+  if(typeof residual.t==='string'){termList=[];for(let i=0;i<residual.t.length;i++){const c=SHARE_ALPH.indexOf(residual.t.charAt(i));if(c>=0)termList.push(codeToTerm(c));}}
+  else if(Array.isArray(residual.t))termList=residual.t;   // legacy/fallback form
+  else termList=SHARE_TERMS;
+  const STATES=BigInt(termList.length+1);
+  function strToBig(s){let v=0n;s=s||'';for(let i=0;i<s.length;i++){const d=SHARE_ALPH.indexOf(s.charAt(i));if(d<0)return null;v=v*64n+BigInt(d);}return v;}
+  function decMap(s){
+    const map={};let v=strToBig(s);if(v==null)return null;
+    const vals=new Array(SHARE_CODES.length).fill(0);
+    for(let i=0;i<SHARE_CODES.length&&v>0n;i++){vals[i]=Number(v%STATES);v=v/STATES;}
+    for(let i=0;i<SHARE_CODES.length;i++){const val=vals[i];if(val>0&&val-1<termList.length)map[SHARE_CODES[i]]=termList[val-1];}
+    return map;
+  }
   const std=decMap(p[2]),pm=decMap(p[3]),done=decMap(p[4]);
+  if(std==null||pm==null||done==null)return null;   // invalid characters in a map field
   if(residual.x&&typeof residual.x==='object'){const maps={std:std,pm:pm,done:done};for(const mk in residual.x){if(maps[mk]&&residual.x[mk]&&typeof residual.x[mk]==='object'){const sub=residual.x[mk];for(const code in sub)if(typeof sub[code]==='string')maps[mk][code]=sub[code];}}}
   return {v:3,track:(p[1]==='p'?'premed':'standard'),terms:termList.slice(),std:std,pm:pm,done:done,tileMeta:(residual.m&&typeof residual.m==='object')?residual.m:{}};
 }
