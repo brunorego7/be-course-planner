@@ -183,14 +183,29 @@ function toV3(obj,trackParam){
 function lsGet(key){try{return localStorage.getItem(key);}catch(e){return null;}}
 function lsSet(key,s){try{localStorage.setItem(key,s);return true;}catch(e){return false;}}
 
+// Decode a shared-plan payload. Tries the value as-is and, as a recovery, with spaces restored to '+',
+// because a base64 '+' left unencoded in a query string is turned back into a space when the link is read.
+// This keeps older links (generated before the payload was URL-encoded) loading correctly.
+function decodePlan(enc){
+  if(!enc)return null;
+  const cands=[enc, enc.replace(/ /g,'+')];
+  for(const s of cands){
+    try{return JSON.parse(decodeURIComponent(escape(atob(s))));}catch(e){}
+    try{return JSON.parse(atob(s));}catch(e){}
+  }
+  return null;
+}
+
 function loadInitial(){
   const params=new URLSearchParams(location.search),enc=params.get('data');
   const tp=params.get('track');const trackParam=tp==='premed'?'premed':(tp==='standard'?'standard':null);
   if(enc){
-    let obj=null;
-    try{obj=JSON.parse(decodeURIComponent(escape(atob(enc))));}
-    catch(e){try{obj=JSON.parse(atob(enc));}catch(e2){console.warn('bad share link',e2);}}
+    const obj=decodePlan(enc);
     if(obj){try{state=toV3(obj,trackParam);return 'url';}catch(e){console.warn('bad share link',e);}}
+    // A data= link was supplied but could not be decoded or parsed (corrupt or truncated). Do not fall back
+    // to a locally saved plan, which would masquerade as the shared one; show the default and flag the error.
+    console.warn('bad share link: could not decode ?data=');
+    state=defaultState(trackParam);return 'url-error';
   }
   const saved=lsGet(CONFIG.storageKey);
   if(saved){try{state=normalizeV3(JSON.parse(saved));persistArmed=true;return 'local';}catch(e){console.warn('bad saved state',e);}}
@@ -490,7 +505,7 @@ function updateChevrons(){const led=el('ledger'),max=led.scrollWidth-led.clientW
 /* ===== share link ===== */
 function encodeState(){return btoa(unescape(encodeURIComponent(serialize())));}
 function shareLink(){
-  const url=location.origin+location.pathname+'?data='+encodeState();
+  const url=location.origin+location.pathname+'?data='+encodeURIComponent(encodeState());
   const done=()=>toast('Link copied to clipboard');
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(done).catch(()=>prompt('Copy this link:',url));}
   else prompt('Copy this link:',url);
@@ -507,16 +522,18 @@ function confirmModal(opts){
   root.querySelector('.modal-card').setAttribute('aria-label',opts.title||'Confirm');
   root.querySelector('.modal-title').textContent=opts.title||'Are you sure?';
   root.querySelector('.modal-msg').textContent=opts.message||'';
-  const go=root.querySelector('.modal-go');go.textContent=opts.confirmText||'Confirm';
+  const go=root.querySelector('.modal-go');go.textContent=opts.confirmText||(opts.alert?'OK':'Confirm');
   if(opts.danger)go.classList.add('danger');
+  const cancel=root.querySelector('.modal-cancel');
+  if(opts.alert)cancel.style.display='none';
   function close(){document.removeEventListener('keydown',onKey);if(root.parentNode)root.parentNode.removeChild(root);}
   function onKey(e){if(e.key==='Escape'){e.preventDefault();close();}}
-  root.querySelector('.modal-cancel').onclick=close;
+  cancel.onclick=close;
   go.onclick=function(){close();if(opts.onConfirm)opts.onConfirm();};
   root.addEventListener('click',function(e){if(e.target===root)close();});
   document.addEventListener('keydown',onKey);
   document.body.appendChild(root);
-  root.querySelector('.modal-cancel').focus();
+  (opts.alert?go:cancel).focus();
 }
 
 /* ===== reset ===== */
@@ -949,6 +966,7 @@ function init(){
   el('file-load').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>loadBackupText(r.result);r.readAsText(f);e.target.value='';});
   el('ih').onclick=()=>el('issues').classList.toggle('cl');
   if(src==='local')setSaved('saved');
+  if(src==='url-error')confirmModal({alert:true,title:'This shared link could not be opened',message:'The link looks incomplete or corrupted, so the shared plan could not be loaded. You are seeing the default plan, not the plan that was shared with you. Ask the sender to copy the full link and send it again.',confirmText:'OK'});
 }
 document.addEventListener('DOMContentLoaded',init);
 if(document.readyState!=='loading')init();
