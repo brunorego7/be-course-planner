@@ -197,8 +197,16 @@ function decodePlan(enc){
 }
 
 function loadInitial(){
-  const params=new URLSearchParams(location.search),enc=params.get('data');
+  const params=new URLSearchParams(location.search);
   const tp=params.get('track');const trackParam=tp==='premed'?'premed':(tp==='standard'?'standard':null);
+  const compact=params.get('p');   // compact v4 share link
+  if(compact){
+    let obj=null;try{obj=decodeStateCompact(compact);}catch(e){}
+    if(obj){try{state=toV3(obj,trackParam);return 'url';}catch(e){console.warn('bad compact link',e);}}
+    console.warn('bad compact link: could not decode ?p=');
+    state=defaultState(trackParam);return 'url-error';
+  }
+  const enc=params.get('data');   // legacy share link (full base64 JSON) — kept working forever
   if(enc){
     const obj=decodePlan(enc);
     if(obj){try{state=toV3(obj,trackParam);return 'url';}catch(e){console.warn('bad share link',e);}}
@@ -504,8 +512,67 @@ function updateChevrons(){const led=el('ledger'),max=led.scrollWidth-led.clientW
 
 /* ===== share link ===== */
 function encodeState(){return btoa(unescape(encodeURIComponent(serialize())));}
+/* ===== compact share links (v4): far shorter URLs. Old ?data= links still load via decodePlan. ===== */
+// Frozen, APPEND-ONLY index of every placeable course/placeholder code. This order defines the positional
+// encoding below, so old links keep decoding correctly. Only ever append new codes; never reorder or remove
+// (leave the string in place as a tombstone if a course is retired). Codes missing here still round-trip;
+// they fall to the JSON residual, just less compactly.
+const SHARE_CODES=["BE1251","CHEM1201","BIOL1201","MATH1550","BIOL1208","ENGL1001","BE1252","BIOL1202","MATH1552","CHEM1202","BIOL1209","PHYS2110","BE2352","BIOL2051","EE2950","MATH2065","CE2450","BE2350","CE3400","PHYS2113","ENGL2000","CHEM1212","CHEM2261","BE4303","AGEC2003","BIOL2083","ME3333","BE3340","BE4352","CE2200","BE3320","BE4390","CE2460","BE4392","PHYS2108","PHYS2109","CHEM2262","CHEM2364","HUM1","HUM2","DES1","DES2","ART","ELEC","DES3","HUM3","SOCSCI","TECHELEC"];
+// Frozen, APPEND-ONLY canonical term order. When a plan uses exactly these terms they are omitted from the
+// link entirely; a plan with added or removed terms carries its own list. Same rule: append only.
+const SHARE_TERMS=["completed","year1-fall","year1-spring","year2-fall","year2-spring","year3-fall","year3-spring","year4-fall","year4-spring"];
+// 64 URL-safe "digits" for single-character indices. '.' = course not placed. '~' separates fields.
+const SHARE_ALPH="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+
+function b64urlEncode(s){return btoa(unescape(encodeURIComponent(s))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+function b64urlDecode(s){s=String(s).replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';return decodeURIComponent(escape(atob(s)));}
+// 12-bit integrity tag (2 URL-safe chars) so a truncated or corrupted ?p= link fails cleanly to the error
+// alert instead of silently decoding a partial plan. Not security; just tamper/truncation detection.
+function shareChk(s){var h=0;for(var i=0;i<s.length;i++){h=(Math.imul(h,31)+s.charCodeAt(i))>>>0;}return SHARE_ALPH.charAt((h>>>6)&63)+SHARE_ALPH.charAt(h&63);}
+
+// Serialize the whole plan to a compact, URL-safe string. The bulk (three course->term maps) becomes one
+// character per catalog course; only the irregular remainder (custom courses, notes, non-default terms) is
+// carried as a small base64url JSON blob.
+function encodeStateCompact(){
+  const st=state;
+  const termsDefault=JSON.stringify(st.terms)===JSON.stringify(SHARE_TERMS);
+  const termList=termsDefault?SHARE_TERMS:(st.terms||SHARE_TERMS);
+  const tIdx={};termList.forEach((t,i)=>{tIdx[t]=i;});
+  function encMap(map){
+    let s='';map=map||{};
+    for(let i=0;i<SHARE_CODES.length;i++){const t=map[SHARE_CODES[i]];s+=(typeof t==='string'&&tIdx[t]!=null)?SHARE_ALPH.charAt(tIdx[t]):'.';}
+    return s.replace(/\.+$/,'');
+  }
+  const residual={};
+  if(!termsDefault)residual.t=st.terms;
+  const extra={};
+  ['std','pm','done'].forEach(mk=>{const map=st[mk]||{},sub={};for(const code in map){if(SHARE_CODES.indexOf(code)<0&&typeof map[code]==='string')sub[code]=map[code];}if(Object.keys(sub).length)extra[mk]=sub;});
+  if(Object.keys(extra).length)residual.x=extra;
+  const tm={},meta=st.tileMeta||{};
+  for(const code in meta){if(meta[code]&&typeof meta[code]==='object'&&Object.keys(meta[code]).length)tm[code]=meta[code];}
+  if(Object.keys(tm).length)residual.m=tm;
+  const res=Object.keys(residual).length?b64urlEncode(JSON.stringify(residual)):'';
+  const body='4~'+(st.track==='premed'?'p':'s')+'~'+encMap(st.std)+'~'+encMap(st.pm)+'~'+encMap(st.done)+'~'+res;
+  return body+shareChk(body);
+}
+
+// Inverse of encodeStateCompact. Returns a v3-shaped object, or null if the string is not a valid v4 payload.
+function decodeStateCompact(str){
+  if(typeof str!=='string'||str.length<3||str.charAt(0)!=='4'||str.charAt(1)!=='~')return null;
+  const chk=str.slice(-2),body=str.slice(0,-2);
+  if(shareChk(body)!==chk)return null;   // truncated or corrupted link
+  const p=body.split('~');if(p.length<5)return null;
+  let residual={};
+  if(p[5]){try{residual=JSON.parse(b64urlDecode(p[5]));}catch(e){return null;}}
+  const termList=Array.isArray(residual.t)?residual.t:SHARE_TERMS;
+  function decMap(s){const map={};s=s||'';for(let i=0;i<s.length&&i<SHARE_CODES.length;i++){const c=s.charAt(i);if(c==='.')continue;const ti=SHARE_ALPH.indexOf(c);if(ti<0||ti>=termList.length)continue;map[SHARE_CODES[i]]=termList[ti];}return map;}
+  const std=decMap(p[2]),pm=decMap(p[3]),done=decMap(p[4]);
+  if(residual.x&&typeof residual.x==='object'){const maps={std:std,pm:pm,done:done};for(const mk in residual.x){if(maps[mk]&&residual.x[mk]&&typeof residual.x[mk]==='object'){const sub=residual.x[mk];for(const code in sub)if(typeof sub[code]==='string')maps[mk][code]=sub[code];}}}
+  return {v:3,track:(p[1]==='p'?'premed':'standard'),terms:termList.slice(),std:std,pm:pm,done:done,tileMeta:(residual.m&&typeof residual.m==='object')?residual.m:{}};
+}
+
 function shareLink(){
-  const url=location.origin+location.pathname+'?data='+encodeURIComponent(encodeState());
+  const url=location.origin+location.pathname+'?p='+encodeURIComponent(encodeStateCompact());
   const done=()=>toast('Link copied to clipboard');
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(done).catch(()=>prompt('Copy this link:',url));}
   else prompt('Copy this link:',url);
