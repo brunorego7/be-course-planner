@@ -33,7 +33,7 @@ const CATALOG = {
   BE3340:{code:'BE 3340',title:'Process Design in Biological Engineering',cr:3,sem:['S'],pre:['MATH2065'],co:[],diff:'normal'},
   BE4352:{code:'BE 4352',title:'Transport Phenomena in Biological Engineering',cr:3,sem:['S'],pre:['BE2352','BIOL2051'],co:['CE2200','ME3333'],diff:'normal'},
   CE2200:{code:'CE 2200',title:'Fluid Mechanics',cr:3,sem:['F','S','Su'],summer:'JA',pre:['CE2450'],co:[],diff:'hardest'},
-  BE3320:{code:'BE 3320',title:'Mechanical Design for Biological Engineering',cr:3,sem:['F'],pre:['CE3400'],co:[],diff:'normal'},
+  BE3320:{code:'BE 3320',title:'Mechanical Design for Biological Engineering',cr:3,sem:['F'],pre:['CE3400'],co:['CE2460'],diff:'normal'},
   BE4390:{code:'BE 4390',title:'Senior Engineering Design I',cr:3,sem:['F'],pre:['BE2350'],co:['CE3400'],diff:'normal'},
   CE2460:{code:'CE 2460',title:'Dynamics and Vibrations',cr:3,sem:['F','S'],pre:['CE2450'],co:['MATH2065'],diff:'hardest'},
   BE4392:{code:'BE 4392',title:'Senior Engineering Design II',cr:3,sem:['S'],pre:['BE4390'],co:[],diff:'normal'},
